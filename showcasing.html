@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Showcasing Builder – Binaryshop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #111;
+      --gray1: #F7F7F7;
+      --gray2: #EEEEEE;
+      --gray3: #AAAAAA;
+      --gray4: #666;
+      --border: #E5E5E5;
+      --panel: #F4F2EE;
+      --ff: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+      --radius: 8px;
+      --panel-w: 420px;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--ff);
+      background: #EFEDE9;
+      color: var(--black);
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      grid-template-columns: var(--panel-w) 1fr;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; padding: 0 20px;
+      background: #fff; border-bottom: 1px solid var(--border); gap: 12px;
+    }
+    .topbar-back {
+      display: flex; align-items: center; gap: 6px; text-decoration: none;
+      color: var(--gray4); font-size: 13px; font-weight: 500; transition: color 0.15s;
+    }
+    .topbar-back:hover { color: var(--black); }
+    .topbar-div { width: 1px; height: 18px; background: var(--border); }
+    .topbar-title { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .topbar-badge {
+      padding: 2px 8px; background: var(--gray1); border: 1px solid var(--border);
+      border-radius: 100px; font-size: 11px; color: var(--gray4); font-weight: 500;
+    }
+
+    /* ── Left Panel ── */
+    .panel {
+      background: var(--panel); border-right: 1px solid var(--border);
+      display: grid; grid-template-rows: auto 1fr 56px; overflow: hidden;
+    }
+    .panel-scroll { overflow-y: auto; padding: 16px 0 0; }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex; background: #fff;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-item {
+      flex: 1; padding: 13px 6px 11px;
+      font-size: 12px; font-weight: 600; color: var(--gray3);
+      text-align: center; cursor: pointer; text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      letter-spacing: -0.2px; white-space: nowrap;
+    }
+    .tab-item:hover { color: var(--gray4); }
+    .tab-item.active { color: var(--black); border-bottom-color: var(--black); }
+    .panel-scroll::-webkit-scrollbar { width: 3px; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+    .sec { border-bottom: 1px solid var(--border); }
+    .sec-hd {
+      display: flex; align-items: center; gap: 8px;
+      padding: 13px 20px; cursor: pointer; user-select: none;
+      background: var(--panel); transition: background 0.1s;
+    }
+    .sec-hd:hover { background: #EAE8E3; }
+    .sec-num {
+      width: 20px; height: 20px; background: var(--black); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sec-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .sec-arr {
+      width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+      color: var(--gray3); transition: transform 0.15s;
+    }
+    .sec-arr.open { transform: rotate(180deg); }
+    .sec-bd { display: none; padding: 12px 20px 16px; background: #fff; }
+    .sec-bd.open { display: block; }
+
+    .fg { margin-bottom: 12px; }
+    .fg:last-child { margin-bottom: 0; }
+    .fl { display: block; font-size: 11.5px; font-weight: 500; color: var(--gray4); margin-bottom: 5px; }
+    .fi {
+      width: 100%; padding: 8px 10px; background: var(--gray1);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: var(--ff); font-size: 13px; color: var(--black);
+      transition: border-color 0.15s; outline: none;
+    }
+    .fi:focus { border-color: #999; background: #fff; }
+
+    .upload-box {
+      width: 100%; aspect-ratio: 1;
+      background: var(--gray1); border: 1.5px dashed var(--border); border-radius: var(--radius);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; position: relative; overflow: hidden;
+      background-size: cover; background-position: center; transition: border-color 0.15s;
+    }
+    .upload-box:hover { border-color: #999; }
+    .upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-lbl { font-size: 12px; color: var(--gray3); font-weight: 500; pointer-events: none; }
+    .upload-box.has-img .upload-lbl { display: none; }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .toggle-label { font-size: 13px; font-weight: 500; }
+    .toggle { position: relative; width: 36px; height: 20px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: #CCC; border-radius: 20px; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--black); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* Action bar */
+    .action-bar {
+      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      background: var(--panel); border-top: 1px solid var(--border);
+    }
+    .btn-exp {
+      flex: 1; height: 36px; background: var(--black); color: #fff; border: none;
+      border-radius: var(--radius); font-size: 12px; font-weight: 600; font-family: var(--ff);
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-exp:hover { opacity: 0.8; }
+    .btn-exp:disabled { opacity: 0.4; cursor: wait; }
+    .btn-exp-out {
+      flex: 1; height: 36px; background: #fff; color: var(--black);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; font-family: var(--ff);
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .btn-exp-out:hover { border-color: #888; }
+
+    /* ── Right Preview Area ── */
+    .preview-area {
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 28px 24px; overflow-y: auto; background: #EFEDE9;
+    }
+    .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .preview-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      color: var(--gray3); text-transform: uppercase;
+    }
+
+    /* ── Canvas 프레임 (1/3 스케일 클리핑) ── */
+    .preview-canvas-frame {
+      width: 375px;
+      height: 562px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* ────────────────────────────────────────────
+       CANVAS  –  1125×1686px 실제 크기
+       화면 표시는 transform scale(1/3) = 375×562
+    ──────────────────────────────────────────── */
+    #canvas {
+      width: 1125px;
+      height: 1686px;
+      position: relative;
+      overflow: hidden;
+      background: #f4f4f4;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+      transform: scale(0.33333);
+      transform-origin: top left;
+      cursor: default;
+      user-select: none;
+    }
+    #canvas.has-img { cursor: grab; }
+    #canvas.dragging { cursor: grabbing !important; }
+
+    /* 배경 이미지 레이어 */
+    .cv-bg {
+      position: absolute; inset: 0;
+      background-repeat: no-repeat;
+      z-index: 0;
+    }
+
+    /* 상단 그라데이션 */
+    .cv-grad-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 660px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
+      z-index: 1; pointer-events: none;
+    }
+
+    /* 하단 그라데이션 */
+    .cv-grad-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1080px;
+      background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0) 100%);
+      z-index: 1; pointer-events: none;
+    }
+
+    /* App Chrome */
+    .cv-chrome {
+      position: absolute; top: 0; left: 0; right: 0;
+      z-index: 2; pointer-events: none;
+    }
+    .cv-status {
+      height: 132px; display: flex; align-items: center; justify-content: space-between;
+      padding: 36px 60px 0; color: #fff;
+    }
+    .cv-status-time { font-size: 45px; font-weight: 600; letter-spacing: -0.9px; }
+    .cv-status-icons { display: flex; align-items: center; gap: 18px; }
+    .cv-nav {
+      height: 156px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; color: #fff;
+    }
+    .cv-nav-left { display: flex; align-items: center; gap: 30px; }
+    .cv-nav-shop { font-size: 42px; font-weight: 400; opacity: 0.85; }
+    .cv-nav-brand { font-size: 51px; font-weight: 700; letter-spacing: -1.2px; }
+    .cv-nav-right { display: flex; align-items: center; gap: 54px; }
+
+    /* Bottom content */
+    .cv-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      z-index: 3; pointer-events: none; padding: 0 72px 168px;
+    }
+    .cv-category { font-size: 45px; font-weight: 600; color: #fff; margin-bottom: 12px; line-height: 63px; }
+    .cv-title    { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; word-break: keep-all; }
+    .cv-subtitle { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; }
+    .cv-counter  {
+      position: absolute; bottom: 69px; right: 60px;
+      background: rgba(0,0,0,0.75); color: #fff;
+      font-size: 36px; font-weight: 500; padding: 12px 24px;
+      border-radius: 90px; letter-spacing: -0.9px; line-height: 48px;
+      white-space: nowrap; z-index: 3; pointer-events: none;
+    }
+    .cv-photo-by {
+      position: absolute; bottom: 48px; right: 60px;
+      font-size: 27px; font-weight: 600; color: rgba(255,255,255,0.75);
+      z-index: 1; pointer-events: none;
+    }
+
+    /* ── 모서리 리사이즈 핸들 (투명, 기능만 유지) ── */
+    /* 프리셋 로고 레이어 */
+    .cv-logo-preset {
+      position: absolute;
+      z-index: 3; pointer-events: none;
+      display: none;
+    }
+    .cv-logo-preset img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* ── 이미지 선택 오버레이 ── */
+    .canvas-sel-wrap {
+      position: relative; display: inline-block; flex-shrink: 0;
+    }
+    #sel-overlay {
+      position: absolute; display: none;
+      pointer-events: none; z-index: 20;
+    }
+    .sel-border-inner {
+      position: absolute; inset: 0;
+      border: 2px solid #1b6ef3; pointer-events: none;
+    }
+    .sel-h {
+      position: absolute; width: 8px; height: 8px;
+      background: #fff; border: 1.5px solid #1b6ef3;
+      pointer-events: none;
+    }
+    .sel-h.rh { pointer-events: all; }
+    .sel-tl { top: -4px; left: -4px; cursor: nwse-resize; }
+    .sel-tc { top: -4px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .sel-tr { top: -4px; right: -4px; cursor: nesw-resize; }
+    .sel-ml { left: -4px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+    .sel-mr { right: -4px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+    .sel-bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
+    .sel-bc { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .sel-br { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+    /* Export progress */
+    .exp-prog {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 9999;
+      align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    }
+    .exp-prog.show { display: flex; }
+    .exp-prog p { font-size: 14px; color: #fff; font-weight: 600; }
+    .spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <a class="topbar-back" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      홈
+    </a>
+    <div class="topbar-div"></div>
+    <div class="topbar-title">Showcasing Builder</div>
+    <div class="topbar-badge">PNG 내보내기</div>
+  </div>
+
+  <!-- ── Left Panel ── -->
+  <div class="panel">
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <a class="tab-item active" href="showcasing.html">Showcasing</a>
+      <a class="tab-item" href="brand.html">Featured Brand</a>
+      <a class="tab-item" href="magazine.html">Binary Magazine</a>
+    </div>
+
+    <div class="panel-scroll">
+
+      <!-- 1. 배경 이미지 -->
+      <div class="sec">
+        <div class="sec-hd" onclick="toggleSec(this)">
+          <div class="sec-num">1</div>
+          <div class="sec-name">배경 이미지</div>
+          <div class="sec-arr open">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="sec-bd open">
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl">배경 사진</label>
+            <div class="upload-box" id="ub-bg">
+              <input type="file" accept="image/*" onchange="loadImg(event,'bg')">
+              <span class="upload-lbl">+ 이미지 업로드</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. UI 미리보기 -->
+      <div class="sec">
+        <div class="sec-hd" onclick="toggleSec(this)">
+          <div class="sec-num">2</div>
+          <div class="sec-name">UI 미리보기</div>
+          <div class="sec-arr open">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="sec-bd open">
+          <div class="toggle-row" style="margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border)">
+            <div>
+              <div class="toggle-label">UI 표시</div>
+              <div style="font-size:11px; color:var(--gray3); margin-top:2px">OFF → 배경 사진만 · ON → 최종 출력 미리보기</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="f-grad-on" checked onchange="rp()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="fg">
+            <label class="fl">카테고리 라벨</label>
+            <input class="fi" type="text" id="f-category" value="Brandcast" oninput="rp()">
+          </div>
+          <div class="fg">
+            <label class="fl">메인타이틀 (상)</label>
+            <input class="fi" type="text" id="f-title" placeholder="싱그러운 여름의 향기" oninput="limitAndRp(this)" value="싱그러운 여름의 향기" maxlength="13">
+          </div>
+          <div class="fg">
+            <label class="fl">메인타이틀 (하)</label>
+            <input class="fi" type="text" id="f-subtitle" placeholder="PATH.B ~20%" oninput="limitAndRp(this)" value="PATH.B ~20%" maxlength="13">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 로고 삽입 -->
+      <div class="sec">
+        <div class="sec-hd" onclick="toggleSec(this)">
+          <div class="sec-num">3</div>
+          <div class="sec-name">로고 삽입</div>
+          <div class="sec-arr open">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="sec-bd open">
+          <div class="toggle-row">
+            <span class="toggle-label">집요한세일</span>
+            <label class="toggle">
+              <input type="checkbox" id="preset-jy-on" onchange="onPresetJyToggle()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="fg" style="margin-bottom:0;margin-top:20px">
+            <label class="fl">로고 SVG · 위치: 로고 가이드 영역</label>
+            <div class="upload-box" id="ub-logo-sc" style="aspect-ratio:2">
+              <input type="file" accept=".svg,image/svg+xml" onchange="loadLogoSc(event)">
+              <span class="upload-lbl">+ SVG 업로드</span>
+            </div>
+          </div>
+          <!-- 유의사항 -->
+          <div style="font-size:11px; color:var(--gray3); margin-top:10px;">유의사항 : 브랜드 LOGO SVG 미취합 건 진행시 마케팅 디자인팀에 SVG 변경 요청</div>
+        </div>
+      </div>
+
+      <!-- 4. 유저명 표기 -->
+      <div class="sec">
+        <div class="sec-hd" onclick="toggleSec(this)">
+          <div class="sec-num">4</div>
+          <div class="sec-name">유저명 표기</div>
+          <div class="sec-arr open">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="sec-bd open">
+          <div class="toggle-row">
+            <span class="toggle-label">유저명 표시</span>
+            <label class="toggle">
+              <input type="checkbox" id="f-wm-on" onchange="onWmToggle()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div id="wm-row" style="display:none">
+            <div class="fg">
+              <label class="fl">오늘의집 유저명</label>
+              <input class="fi" type="text" id="f-wm-name" placeholder="오늘의집 유저명" value="오늘의집 유저명" oninput="rp()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-scroll -->
+
+    <div class="action-bar">
+      <button class="btn-exp-out" onclick="doReset()">새로고침</button>
+      <button class="btn-exp" onclick="doExport()">내보내기 (PNG)</button>
+    </div>
+  </div>
+
+  <!-- ── Right Preview ── -->
+  <div class="preview-area">
+    <div class="preview-wrap">
+      <div class="preview-label">Preview · 1x &nbsp;/&nbsp; 출력 3x</div>
+
+      <div class="canvas-sel-wrap" id="canvas-sel-wrap">
+      <div class="preview-canvas-frame">
+        <div id="canvas">
+
+          <!-- Layer 0: 배경 -->
+          <div class="cv-bg" id="cv-bg"></div>
+
+          <!-- Layer 1: 그라데이션 -->
+          <div class="cv-grad-top"    id="cv-grad-top"></div>
+          <div class="cv-grad-bottom" id="cv-grad-btm"></div>
+
+          <!-- Layer 1.5: 유저명 (그라데이션 위, UI 미리보기 아래) -->
+          <div class="cv-photo-by" id="cv-photo-by" style="display:none">Photo by. </div>
+
+          <!-- Layer 2: App Chrome -->
+          <div class="cv-chrome">
+            <div class="cv-status">
+              <span class="cv-status-time">9:41</span>
+              <div class="cv-status-icons">
+                <svg width="51" height="36" viewBox="0 0 17 12" fill="white">
+                  <rect x="0" y="8" width="3" height="4" rx="0.5"/>
+                  <rect x="4.5" y="5.5" width="3" height="6.5" rx="0.5"/>
+                  <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+                  <rect x="13.5" y="0" width="3" height="12" rx="0.5" opacity="0.3"/>
+                </svg>
+                <svg width="48" height="36" viewBox="0 0 16 12" fill="none">
+                  <path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="white"/>
+                  <path d="M4.2 7.3A5.4 5.4 0 0 1 8 5.8c1.46 0 2.78.58 3.75 1.52" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <path d="M1.5 4.8A8.7 8.7 0 0 1 8 2c2.5 0 4.76 1.04 6.38 2.72" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                </svg>
+                <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+                  <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/>
+                  <rect x="2" y="2" width="18" height="8" rx="2" fill="white"/>
+                  <path d="M23 4v4a2 2 0 0 0 0-4z" fill="white" opacity="0.4"/>
+                </svg>
+              </div>
+            </div>
+            <div class="cv-nav">
+              <div class="cv-nav-left">
+                <span class="cv-nav-shop">쇼핑</span>
+                <span class="cv-nav-brand">BinaryShōp</span>
+              </div>
+              <div class="cv-nav-right">
+                <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+                  <circle cx="10" cy="10" r="6.5" stroke="white" stroke-width="1.8"/>
+                  <path d="M15 15l4 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                <svg width="60" height="66" viewBox="0 0 20 22" fill="none">
+                  <path d="M4 2h12a2 2 0 0 1 2 2v16l-8-4-8 4V4a2 2 0 0 1 2-2z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+                <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+                  <path d="M2 2h2l2.5 11h9l2-7H6.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="9.5" cy="17.5" r="1.5" fill="white"/>
+                  <circle cx="15.5" cy="17.5" r="1.5" fill="white"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer 2-a: 집요한세일 프리셋 로고 (Figma 3x: 769.5,384 294×70) -->
+          <div class="cv-logo-preset" id="cv-preset-jy" style="left:769.5px;top:384px;width:294px;height:70px;">
+            <img id="cv-preset-jy-img" src="" alt="집요한세일">
+          </div>
+          <!-- Layer 2-b: 커스텀 SVG 로고 (Logo Guide 영역 3x: 769.5,264 354×243) -->
+          <div class="cv-logo-preset" id="cv-logo-sc" style="left:769.5px;top:384px;width:294px;height:123px;">
+            <img id="cv-logo-sc-img" src="" alt="커스텀 로고">
+          </div>
+
+          <!-- Layer 3: 텍스트 -->
+          <div class="cv-content">
+            <div class="cv-category" id="cv-cat">Brandcast</div>
+            <div class="cv-title"    id="cv-title"></div>
+            <div class="cv-subtitle" id="cv-subtitle"></div>
+          </div>
+
+          <div class="cv-counter" id="cv-counter">01/12</div>
+
+
+        </div><!-- /#canvas -->
+      </div>
+        <div id="sel-overlay">
+          <div class="sel-border-inner"></div>
+          <div class="sel-h rh sel-tl" id="rh-tl" data-corner="tl"></div>
+          <div class="sel-h rh sel-tr" id="rh-tr" data-corner="tr"></div>
+          <div class="sel-h rh sel-bl" id="rh-bl" data-corner="bl"></div>
+          <div class="sel-h rh sel-br" id="rh-br" data-corner="br"></div>
+          <div class="sel-h rh sel-tc" data-corner="tc"></div>
+          <div class="sel-h rh sel-bc" data-corner="bc"></div>
+          <div class="sel-h rh sel-ml" data-corner="ml"></div>
+          <div class="sel-h rh sel-mr" data-corner="mr"></div>
+        </div>
+      </div>
+
+      <div class="preview-label">375 × 562px · 출력 1125 × 1686px</div>
+      <div style="font-size:11px; color:var(--gray3); margin-top:-6px;">사진 이동 및 모서리 드래그로 확대 가능</div>
+    </div>
+  </div>
+
+  <div class="exp-prog" id="exp-prog">
+    <div class="spinner"></div>
+    <p>내보내는 중...</p>
+  </div>
+
+<script>
+  const CW = 1125, CH = 1686;
+  const DS = 1 / 3; /* display scale */
+
+  /* 집요한세일 프리셋 SVG */
+  const PRESET_JY_SRC = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTgiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCA5OCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkuODMzIDEzLjA3NjFMMTUuNjg1MiAxMy4xNTc3QzE3LjQ1NjcgNy40NDYxOCAxNi41MjkgNi4wODA2OCAxNS42OTY1IDUuNDQ3ODNDMTQuNjk4NSA0LjY4Nzk1IDEyLjg0NTMgNC4zODYyNyAxMS43OTA1IDUuMTIxMkwxNC45NTAyIDAuODExNDYySDEuNjEyNzVWMi42ODUwNkg4Ljc2MjM3TDAgMTUuMzcxNkw0LjY5OTg4IDE1LjQ2MjNDNC42OTk4OCAxNS40NjIzIDUuMzUzMTQgMTQuNTAwNSA3LjI1NjIzIDExLjczMUM5LjkzMDUzIDcuODM4NiAxMS4yMzI1IDYuODM4MjkgMTIuMzU3NiA3LjExNTAyQzEzLjI5ODkgNy4zNDYzOCAxMi40MjM0IDEwLjA4NjUgOS44MzMgMTMuMDc2MVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yMi4wMDcyIDAuNDI3NTUxSDE3LjUyNjRWMTQuNDgzOUgyMi4wMDcyVjAuNDI3NTUxWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM2Ljg4NDkgMTcuMzQyNUgzMi42ODE4VjIwLjkwMjJIMjkuNTg3VjE3LjM0MjVIMjUuMzg2MVYyMC45MDIySDIzLjA5NzJWMjIuNjgxSDM5LjEzMDlWMjAuOTAyMkgzNi44ODQ5VjE3LjM0MjVaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNDUuMTYwMSAyMS4yNzk0VjE2LjIwNDlINDEuMTE3MlYyMy4xMzQ5SDU3LjM2MlYyMS4yODE2SDQ1LjE2MDFWMjEuMjc5NFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik05My45NTcxIDE5Ljg3NDNIOThWMTUuMTY3OEg4MS40MDg3VjE3LjAyNTZIOTMuOTU3MVYxOC4wMjMzSDgxLjQwODdWMjMuMTM4NEg5OFYyMS4yODUySDg1LjQ1MTZWMTkuODc2Nkg5My45NTcxVjE5Ljg3NDNaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMjkuMTE1NSAxNi43NjVDMzIuNTI4NSAxNy40Mjg3IDM3LjgzMzIgMTYuNTMyNSAzOC4xODMxIDkuMjg0MjRDMzguNTYyNCAxLjIxMjA1IDMzLjE1ODMgLTAuNDc4Njg1IDI5LjM5NzYgMC4yODQyOUMyMi4xMzEzIDEuNzQyNTIgMjIuNDQ1MSAxNS40NzYxIDI5LjExNTUgMTYuNzY3M1YxNi43NjI3VjE2Ljc2NVpNMzEuMDc0OCAyLjIzNDYyQzMyLjY4NjUgMi4yMjc4NSAzMy45OTM1IDUuMDMzNyAzNC4wMDkzIDguNTA3NzJDMzQuMDI1MSAxMS45ODE3IDMyLjc0MyAxNC44MDExIDMxLjEzMTMgMTQuODEwMkMyOS41MTk1IDE0LjgxNjkgMjguMjEyNSAxMi4wMTExIDI4LjE5NjcgOC41MzcwNkMyOC4xODA5IDUuMDYzMDQgMjkuNDYzMSAyLjI0MzY1IDMxLjA3NDggMi4yMzIzNlYyLjIzNjg3VjIuMjM0NjJaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNODUuMDA4OSAxNC4wNDFDODcuODg3IDE0LjU5MjggOTIuMzYzMyAxMy44NDU5IDkyLjY1NjcgNy43ODY5N0M5Mi45NzcyIDEuMDM0MzQgODguNDE5NyAtMC4zNzk1NjQgODUuMjQ4MiAwLjI1NjQ3M0M3OS4xMjE4IDEuNDc1MzYgNzkuMzgzNyAxMi45NjM5IDg1LjAwODkgMTQuMDQxWk04Ni42ODYxIDEuODg1MzVDODguMDQ1IDEuODg1MzUgODkuMTM3NSA0LjIzODkxIDg5LjEzNzUgNy4xNDY1Qzg5LjEzNzUgMTAuMDU0MSA4OC4wNDUgMTIuNDA3NyA4Ni42ODYxIDEyLjQwNzdDODUuMzI3MiAxMi40MDc3IDg0LjIzNDYgMTAuMDU0MSA4NC4yMzQ2IDcuMTQ2NUM4NC4yMzQ2IDQuMjM4OTEgODUuMzI3MiAxLjg4NTM1IDg2LjY4NjEgMS44ODUzNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik00My45NDUgMTQuNjI4NUM0Ni43MDk2IDE1LjA2MTYgNTEuMDI5OSAxNC40NjI2IDUxLjMxMzQgOS41NDE5NEM1MS40ODU4IDYuNjAyNDEgNTAuMzA0MiA0Ljc5NjMxIDQ4LjY5NjMgMy45MzcwM0g1Mi4xNzA3VjIuNTA2NDNINDcuNTMwNlYwTDQyLjU3NTIgMEw0My44NjExIDIuNTA2NDNIMzkuMDE0NlYzLjkzNzAzSDQyLjQxNDJDMzguNDA5MSA2LjI5MzcyIDM5LjE0MzkgMTMuODI5MSA0My45MzgyIDE0LjYyODVINDMuOTQyOEg0My45NDVaTTQ1LjU5NjEgMTMuMjk5M0M0NC4yOTQzIDEzLjI5OTMgNDMuMjQ0MyAxMS40MDMzIDQzLjI0NDMgOS4wNDQzNEM0My4yNDQzIDYuNjg1MzQgNDQuMjkyIDQuNzg5NCA0NS41OTYxIDQuNzg5NEM0Ni45MDAxIDQuNzg5NCA0Ny45NDc5IDYuNjg1MzQgNDcuOTQ3OSA5LjA0NDM0QzQ3Ljk0NzkgMTEuNDAzMyA0Ni45MDAxIDEzLjI5OTMgNDUuNTk2MSAxMy4yOTkzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTU2Ljc0OTcgNy4yNzYyN0g1OS4yNzU3VjUuMzEwMTRINTYuNzQ5N1YwLjQyNzU1MUg1Mi44OTY1VjE0LjQ4MzlINTYuNzQ5N1Y3LjI3NjI3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTk3LjkwNzUgMC40Mjc1NTFIOTQuMDU0MlYxNC4wMzAySDk3LjkwNzVWMC40Mjc1NTFaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNzEuNTYyNiA1LjMzMjA4SDY4LjU4MlY3LjMwNzc1SDcxLjU2MjZWMjMuMDE3OUg3NC44NDAyVjAuNjUyNjE4SDcxLjU2MjZWNS4zMzIwOFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik03OC45OTEgMC40MjY1NzVINzUuNzEzNFYyMy4yNDc4SDc4Ljk5MVYwLjQyNjU3NVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik02OS4xNjc0IDkuMzU1OTVDNjcuOTIyMSA4LjM2MjQ0IDY1Ljg1MzQgOS4wNDc0NiA2NS4wMTY0IDkuNTg1MDVMNzAuNTIxNiAwLjUxNDE5MUg2Ni41MDIyTDU3Ljg1NTUgMTQuNjQzM0w2Mi4wOTQ5IDE0LjYzNDJDNjQuMDMyIDExLjM3OTMgNjUuNzc4NiAxMC45MDUyIDY2LjUxOCAxMS4zMjcxQzY3Ljc3NDcgMTIuMDQzOSA2NC4xMDkxIDE4LjAyOTkgNjEuOTg2IDIwLjU4MTdMNjguMzQ2MyAyMC42NDUyQzcxLjUzNTUgMTEuODU3OSA3MC4yMTk5IDEwLjE5MjkgNjkuMTY5NyA5LjM1NTk1SDY5LjE2NzRaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTExLjEwNzkgMTUuMTY3OVYxOC41ODYyQzEzLjUyNTkgMTYuNjU4MSAxNy41Mjk0IDE3LjE1OTQgMTcuNTI5NCAxNy4xNTk0VjE1LjE2NzlIMjIuMDA5M1YyMC43MTE1QzIyLjAwOTMgMjIuNjEwMSAxOS4yMzUyIDIzLjM2MDkgMTUuODUzMiAyMy4zNjA5QzEyLjQ3MTIgMjMuMzYwOSAxMS4wNzg1IDIxLjYwMDcgMTEuMDc2MiAyMS41OTYyVjIzLjEzNDFINi41OTE4VjE1LjE2NTZIMTEuMTA1N0wxMS4xMDc5IDE1LjE2NzlaTTE0LjYxNyAyMS42NTc0QzE2LjQ3NDcgMjEuNjU3NCAxNy41Mjk0IDIwLjkzODQgMTcuNTI5NCAxOS42MjA1VjE4LjE2NDNDMTYuODA1OSAxOC4wNzgxIDEyLjMyODMgMTcuNzI2NSAxMS45NDQ5IDE5Ljg4ODFDMTEuNzY4IDIwLjg4NjIgMTMuMjQyNCAyMS42NTc0IDE0LjYxNyAyMS42NTc0WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==';
+  /* Figma 3x 위치 */
+  const PRESET_JY = { x: 769.5, y: 384, w: 294, h: 70 };
+  let logoScDataUrl = null;
+  const LOGO_GUIDE = { x: 769.5, y: 384, w: 294, h: 123 }; /* Figma 로고 위치 3x: rel(256.5,128) 98×41 */
+
+  const imgs = {};
+  let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
+  let natAspect = 1; /* natH / natW */
+  let minBgW = CW;
+
+  /* ── drag state ── */
+  let isDragging = false;
+  let dStartX, dStartY, dBgX0, dBgY0;
+
+  /* ── resize state ── */
+  let isResizing = false;
+  let rCorner = '';
+  let rStartX, rStartY, rBgW0, rBgH0, rBgX0, rBgY0;
+
+  /* ──────────────── */
+  window.onload = () => { rp(); initInteraction(); };
+
+  function toggleSec(hd) {
+    hd.nextElementSibling.classList.toggle('open');
+    hd.querySelector('.sec-arr').classList.toggle('open');
+  }
+
+  /* ── Image load ── */
+  function loadImg(event, key) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      imgs[key] = e.target.result;
+      const ub = document.getElementById('ub-' + key);
+      if (ub) {
+        ub.style.backgroundImage    = `url(${e.target.result})`;
+        ub.style.backgroundSize     = 'cover';
+        ub.style.backgroundPosition = 'center';
+        ub.classList.add('has-img');
+      }
+      if (key === 'bg') {
+        const img = new Image();
+        img.onload = () => {
+          natAspect = img.naturalHeight / img.naturalWidth;
+          minBgW    = Math.max(CW, CH / natAspect);
+          initBgCover(img.naturalWidth, img.naturalHeight);
+          document.getElementById('canvas').classList.add('has-img');
+          updateSel();
+          rp();
+        };
+        img.src = e.target.result;
+      } else {
+        rp();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function initBgCover(natW, natH) {
+    const scale = Math.max(CW / natW, CH / natH);
+    bgW = natW * scale;
+    bgH = natH * scale;
+    bgX = (CW - bgW) / 2;
+    bgY = (CH - bgH) / 2;
+    clampBg();
+  }
+
+  /* 이미지가 캔버스를 항상 꽉 채우도록 제한 */
+  function clampBg() {
+    bgX = Math.min(0, Math.max(CW - bgW, bgX));
+    bgY = Math.min(0, Math.max(CH - bgH, bgY));
+  }
+
+
+  function updateSel() {
+    const ov = document.getElementById('sel-overlay');
+    if (!imgs || !imgs['bg']) { ov.style.display = 'none'; return; }
+    ov.style.display = 'block';
+    ov.style.left   = (bgX * DS) + 'px';
+    ov.style.top    = (bgY * DS) + 'px';
+    ov.style.width  = (bgW * DS) + 'px';
+    ov.style.height = (bgH * DS) + 'px';
+  }
+  function applyBg() {
+    const cvBg = document.getElementById('cv-bg');
+    if (!imgs['bg']) return;
+    cvBg.style.backgroundImage    = `url(${imgs['bg']})`;
+    cvBg.style.backgroundSize     = `${bgW}px ${bgH}px`;
+    cvBg.style.backgroundPosition = `${bgX}px ${bgY}px`;
+  }
+
+  /* ── Interaction (drag + corner resize) ── */
+  function initInteraction() {
+    const canvas = document.getElementById('canvas');
+
+    /* ---- 드래그 (위치 이동) ---- */
+    canvas.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('rh')) return; /* 핸들은 별도 처리 */
+      if (!imgs['bg']) return;
+      isDragging = true;
+      dStartX = e.clientX; dStartY = e.clientY;
+      dBgX0 = bgX; dBgY0 = bgY;
+      canvas.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    /* ---- 모서리 핸들 리사이즈 ---- */
+    document.querySelectorAll('.rh').forEach(h => {
+      h.addEventListener('mousedown', e => {
+        isResizing = true;
+        rCorner = h.dataset.corner;
+        rStartX = e.clientX; rStartY = e.clientY;
+        rBgW0 = bgW; rBgH0 = bgH; rBgX0 = bgX; rBgY0 = bgY;
+        e.stopPropagation();
+        e.preventDefault();
+      });
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (isDragging) {
+        /* viewport px → canvas px: divide by display scale */
+        bgX = dBgX0 + (e.clientX - dStartX) / DS;
+        bgY = dBgY0 + (e.clientY - dStartY) / DS;
+        clampBg();
+        applyBg(); updateSel();
+      }
+
+      if (isResizing) {
+        const canvasDx = (e.clientX - rStartX) / DS;
+        const canvasDy = (e.clientY - rStartY) / DS;
+        let newW, newH;
+        /* 코너: 비율 유지 */
+        switch (rCorner) {
+          case 'br': case 'tr': newW = rBgW0 + canvasDx; break;
+          case 'bl': case 'tl': newW = rBgW0 - canvasDx; break;
+        }
+        if (newW !== undefined) {
+          newW = Math.max(minBgW, newW);
+          newH = newW * natAspect;
+          switch (rCorner) {
+            case 'br': bgW=newW; bgH=newH; bgX=rBgX0; bgY=rBgY0; break;
+            case 'tr': bgW=newW; bgH=newH; bgX=rBgX0; bgY=rBgY0+rBgH0-newH; break;
+            case 'bl': bgW=newW; bgH=newH; bgX=rBgX0+rBgW0-newW; bgY=rBgY0; break;
+            case 'tl': bgW=newW; bgH=newH; bgX=rBgX0+rBgW0-newW; bgY=rBgY0+rBgH0-newH; break;
+          }
+        }
+        /* 중앙: 비율 유지 */
+        switch (rCorner) {
+          case 'mr': newW = Math.max(minBgW, rBgW0 + canvasDx); newH = newW * natAspect; bgW=newW; bgH=newH; bgX=rBgX0; bgY=rBgY0+(rBgH0-newH)/2; break;
+          case 'ml': newW = Math.max(minBgW, rBgW0 - canvasDx); newH = newW * natAspect; bgW=newW; bgH=newH; bgX=rBgX0+rBgW0-newW; bgY=rBgY0+(rBgH0-newH)/2; break;
+          case 'bc': newH = Math.max(minBgW * natAspect, rBgH0 + canvasDy); newW = newH / natAspect; bgW=newW; bgH=newH; bgX=rBgX0+(rBgW0-newW)/2; bgY=rBgY0; break;
+          case 'tc': newH = Math.max(minBgW * natAspect, rBgH0 - canvasDy); newW = newH / natAspect; bgW=newW; bgH=newH; bgX=rBgX0+(rBgW0-newW)/2; bgY=rBgY0+rBgH0-newH; break;
+        }
+        clampBg();
+        applyBg(); updateSel();
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        document.getElementById('canvas').classList.remove('dragging');
+      }
+      isResizing = false;
+    });
+  }
+
+  /* ── 13자 제한 ── */
+  function limitAndRp(el) {
+    el.value = el.value.replace(/[\r\n]/g, '');
+    if (el.value.length > 13) el.value = el.value.slice(0, 13);
+    rp();
+  }
+
+  function onPresetJyToggle() {
+    const on = document.getElementById('preset-jy-on').checked;
+    const el  = document.getElementById('cv-preset-jy');
+    const img = document.getElementById('cv-preset-jy-img');
+    if (on) {
+      img.src = PRESET_JY_SRC;
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function loadLogoSc(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      logoScDataUrl = e.target.result;
+      const ub = document.getElementById('ub-logo-sc');
+      ub.style.backgroundImage    = `url(${e.target.result})`;
+      ub.style.backgroundSize     = 'contain';
+      ub.style.backgroundPosition = 'center';
+      ub.style.backgroundRepeat   = 'no-repeat';
+      ub.classList.add('has-img');
+      const el  = document.getElementById('cv-logo-sc');
+      const img = document.getElementById('cv-logo-sc-img');
+      img.src = logoScDataUrl;
+      el.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function onWmToggle() {
+    document.getElementById('wm-row').style.display =
+      document.getElementById('f-wm-on').checked ? 'block' : 'none';
+    rp();
+  }
+
+  /* ── Render ── */
+  function rp() {
+    if (imgs['bg']) { applyBg(); updateSel(); }
+    else document.getElementById('cv-bg').style.backgroundImage = '';
+
+    const gradOn = document.getElementById('f-grad-on').checked;
+    document.getElementById('cv-grad-top').style.display = gradOn ? '' : 'none';
+    document.getElementById('cv-grad-btm').style.display = gradOn ? '' : 'none';
+    document.querySelector('.cv-content').style.display  = gradOn ? '' : 'none';
+    document.getElementById('cv-counter').style.display  = gradOn ? '' : 'none';
+    document.querySelector('.cv-chrome').style.display   = gradOn ? '' : 'none';
+
+    document.getElementById('cv-cat').textContent      = document.getElementById('f-category').value;
+    document.getElementById('cv-title').textContent    = document.getElementById('f-title').value;
+    document.getElementById('cv-subtitle').textContent = document.getElementById('f-subtitle').value;
+
+    const wmOn   = document.getElementById('f-wm-on').checked;
+    const wmEl   = document.getElementById('cv-photo-by');
+    wmEl.style.display = wmOn ? '' : 'none';
+    if (wmOn) wmEl.textContent = `Photo by. ${document.getElementById('f-wm-name')?.value || ''}`;
+  }
+
+  function doReset() { location.reload(); }
+
+  /* ── Export – 네이티브 Canvas 2D로 직접 그리기 (화질 무손실) ── */
+  async function doExport() {
+    if (!imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
+
+    const prog = document.getElementById('exp-prog');
+    prog.classList.add('show');
+
+    try {
+      const out = document.createElement('canvas');
+      out.width  = CW;
+      out.height = CH;
+      const ctx  = out.getContext('2d');
+
+      /* 배경색 */
+      ctx.fillStyle = '#1A1A1A';
+      ctx.fillRect(0, 0, CW, CH);
+
+      /* 배경 이미지를 현재 위치/크기 그대로 그리기 */
+      const img = new Image();
+      img.src = imgs['bg'];
+      await new Promise(resolve => { img.onload = resolve; if (img.complete) resolve(); });
+      ctx.drawImage(img, bgX, bgY, bgW, bgH);
+
+      /* 집요한세일 프리셋 로고 */
+      if (document.getElementById('preset-jy-on').checked) {
+        const pImg = new Image();
+        pImg.src = PRESET_JY_SRC;
+        await new Promise(resolve => { pImg.onload = resolve; if (pImg.complete) resolve(); });
+        ctx.drawImage(pImg, PRESET_JY.x, PRESET_JY.y, PRESET_JY.w, PRESET_JY.h);
+      }
+      /* 커스텀 SVG 로고 (Logo Guide 영역, aspect-ratio 유지) */
+      if (logoScDataUrl) {
+        const lImg = new Image();
+        lImg.src = logoScDataUrl;
+        await new Promise(resolve => { lImg.onload = resolve; if (lImg.complete) resolve(); });
+        const lw0 = lImg.naturalWidth || LOGO_GUIDE.w;
+        const lh0 = lImg.naturalHeight || LOGO_GUIDE.h;
+        const sc  = Math.min(LOGO_GUIDE.w / lw0, LOGO_GUIDE.h / lh0, 1);
+        const lw  = lw0 * sc, lh = lh0 * sc;
+        ctx.drawImage(lImg, LOGO_GUIDE.x + (LOGO_GUIDE.w - lw) / 2, LOGO_GUIDE.y + (LOGO_GUIDE.h - lh) / 2, lw, lh);
+      }
+
+      /* 유저명 표시 on이면 텍스트 추가 */
+      if (document.getElementById('f-wm-on').checked) {
+        const wmName = document.getElementById('f-wm-name')?.value || '';
+        ctx.font         = '600 27px "Pretendard Variable", Pretendard, sans-serif';
+        ctx.fillStyle    = 'rgba(255,255,255,0.75)';
+        ctx.textAlign    = 'right';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(`Photo by. ${wmName}`, CW - 60, CH - 48);
+      }
+
+      const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+      const link = document.createElement('a');
+      link.download = `showcasing_${ts}.png`;
+      link.href     = out.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      alert('내보내기 오류: ' + e.message);
+    }
+
+    prog.classList.remove('show');
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
