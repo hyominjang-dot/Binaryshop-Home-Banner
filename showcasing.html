@@ -293,7 +293,7 @@
 
     /* ── Logo selection overlay ── */
     #sel-overlay-logo { position: absolute; display: none; pointer-events: none; z-index: 21; }
-    .logo-drag-handle { position: absolute; inset: 0; cursor: move; pointer-events: all; }
+    .logo-drag-handle { position: absolute; inset: 0; cursor: default; pointer-events: none; }
     /* ── Logo safe-area guide (inside canvas, 3x coords) ── */
     .logo-safe-guide {
       position: absolute; background: rgba(27, 110, 243, 0.3);
@@ -795,15 +795,6 @@
       isLogoResizing = false;
     });
 
-    /* ---- 로고 드래그 ---- */
-    document.getElementById('logo-drag-sc').addEventListener('mousedown', e => {
-      if (!logoScDataUrl) return;
-      isLogoDragging = true;
-      ldStartX = e.clientX; ldStartY = e.clientY;
-      ldLogoX0 = logoScX;   ldLogoY0 = logoScY;
-      e.stopPropagation(); e.preventDefault();
-    });
-
     /* ---- 로고 핸들 리사이즈 ---- */
     document.querySelectorAll('#sel-overlay-logo .sel-h[data-lc]').forEach(h => {
       h.addEventListener('mousedown', e => {
@@ -816,26 +807,20 @@
     });
 
     document.addEventListener('mousemove', e => {
-      if (isLogoDragging) {
-        logoScX = ldLogoX0 + (e.clientX - ldStartX) / DS;
-        logoScY = ldLogoY0 + (e.clientY - ldStartY) / DS;
-        applyLogoSc();
-      }
       if (isLogoResizing) {
         const dx = (e.clientX - lrStartX) / DS;
         const dy = (e.clientY - lrStartY) / DS;
         const minW = 30;
         let newW = lrW0, newH = lrH0;
+        /* 우정렬 고정: 모든 핸들이 우측 엣지(lrX0+lrW0)를 기준으로 확대축소 */
         switch(lrCorner) {
-          case 'br': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0; break;
-          case 'tr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0+lrH0-newH; break;
-          case 'bl': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0; break;
-          case 'tl': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0+lrH0-newH; break;
-          case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0+(lrH0-newH)/2; break;
-          case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0+(lrH0-newH)/2; break;
-          case 'bc': newH=Math.max(minW*logoScNatAsp,lrH0+dy); newW=newH/logoScNatAsp; logoScX=lrX0+(lrW0-newW)/2; logoScY=lrY0; break;
-          case 'tc': newH=Math.max(minW*logoScNatAsp,lrH0-dy); newW=newH/logoScNatAsp; logoScX=lrX0+(lrW0-newW)/2; logoScY=lrY0+lrH0-newH; break;
+          case 'br': case 'tr': case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; break;
+          case 'bl': case 'tl': case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; break;
+          case 'bc': newH=Math.max(minW*logoScNatAsp,lrH0+dy); newW=newH/logoScNatAsp; break;
+          case 'tc': newH=Math.max(minW*logoScNatAsp,lrH0-dy); newW=newH/logoScNatAsp; break;
         }
+        logoScX = lrX0 + lrW0 - newW; /* 우측 엣지 고정 */
+        logoScY = lrY0;                 /* 상단 고정 */
         logoScW = newW; logoScH = newH;
         applyLogoSc();
       }

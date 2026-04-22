@@ -313,7 +313,7 @@
 
     /* ── Logo selection overlay ── */
     #sel-overlay-logo { position: absolute; display: none; pointer-events: none; z-index: 21; }
-    .logo-drag-handle { position: absolute; inset: 0; cursor: move; pointer-events: all; }
+    .logo-drag-handle { position: absolute; inset: 0; cursor: default; pointer-events: none; }
     /* ── Logo safe-area guide (inside canvas, 3x coords) ── */
     .logo-safe-guide {
       position: absolute; background: rgba(27, 110, 243, 0.3);
@@ -842,15 +842,6 @@
       isLogoResizing = false;
     });
 
-    /* ---- 로고 드래그 ---- */
-    document.getElementById('logo-drag-mg').addEventListener('mousedown', e => {
-      if (!logoDataUrl) return;
-      isLogoDragging = true;
-      ldStartX = e.clientX; ldStartY = e.clientY;
-      ldLogoX0 = logoX; ldLogoY0 = logoY;
-      e.stopPropagation(); e.preventDefault();
-    });
-
     /* ---- 로고 핸들 리사이즈 ---- */
     document.querySelectorAll('#sel-overlay-logo .sel-h[data-lc]').forEach(h => {
       h.addEventListener('mousedown', e => {
@@ -863,11 +854,6 @@
     });
 
     document.addEventListener('mousemove', e => {
-      if (isLogoDragging) {
-        logoX = ldLogoX0 + (e.clientX - ldStartX) / DS;
-        logoY = ldLogoY0 + (e.clientY - ldStartY) / DS;
-        applyLogoMg();
-      }
       if (isLogoResizing) {
         const dx = (e.clientX - lrStartX) / DS;
         const dy = (e.clientY - lrStartY) / DS;
