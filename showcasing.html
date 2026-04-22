@@ -105,6 +105,9 @@
       transition: border-color 0.15s; outline: none;
     }
     .fi:focus { border-color: #999; background: #fff; }
+    .url-row { display: flex; gap: 6px; margin-top: 8px; }
+    .url-btn { flex-shrink: 0; padding: 0 12px; height: 36px; background: var(--gray2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-family: var(--ff); color: var(--black); cursor: pointer; white-space: nowrap; }
+    .url-btn:hover { background: var(--border); }
 
     .upload-box {
       width: 100%; aspect-ratio: 1;
@@ -288,6 +291,16 @@
     .sel-bc { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
     .sel-br { bottom: -4px; right: -4px; cursor: nwse-resize; }
 
+    /* ── Logo selection overlay ── */
+    #sel-overlay-logo { position: absolute; display: none; pointer-events: none; z-index: 21; }
+    .logo-drag-handle { position: absolute; inset: 0; cursor: move; pointer-events: all; }
+    /* ── Logo safe-area guide (inside canvas, 3x coords) ── */
+    .logo-safe-guide {
+      position: absolute; background: rgba(27, 110, 243, 0.3);
+      border-radius: 50%; pointer-events: none; display: none; z-index: 9;
+    }
+    .logo-safe-guide.visible { display: block; }
+
     /* Export progress */
     .exp-prog {
       display: none; position: fixed; inset: 0;
@@ -339,6 +352,10 @@
             <div class="upload-box" id="ub-bg">
               <input type="file" accept="image/*" onchange="loadImg(event,'bg')">
               <span class="upload-lbl">+ 이미지 업로드</span>
+            </div>
+            <div class="url-row">
+              <input type="text" class="fi" id="url-bg" placeholder="또는 이미지 URL 입력" style="font-size:12px" onkeydown="if(event.key==='Enter')loadImgFromUrl('bg')">
+              <button class="url-btn" onclick="loadImgFromUrl('bg')">적용</button>
             </div>
           </div>
         </div>
@@ -506,6 +523,9 @@
             </div>
           </div>
 
+          <!-- 로고 안전 영역 가이드 (Figma 3x: 769.5,384 294×123) -->
+          <div class="logo-safe-guide" id="logo-guide-sc" style="left:769.5px;top:384px;width:294px;height:123px;"></div>
+
           <!-- Layer 2-a: 집요한세일 프리셋 로고 (Figma 3x: 769.5,384 294×70) -->
           <div class="cv-logo-preset" id="cv-preset-jy" style="left:769.5px;top:384px;width:294px;height:70px;">
             <img id="cv-preset-jy-img" src="" alt="집요한세일">
@@ -538,6 +558,19 @@
           <div class="sel-h rh sel-ml" data-corner="ml"></div>
           <div class="sel-h rh sel-mr" data-corner="mr"></div>
         </div>
+        <!-- 로고 선택 오버레이 -->
+        <div id="sel-overlay-logo">
+          <div class="sel-border-inner"></div>
+          <div class="logo-drag-handle" id="logo-drag-sc"></div>
+          <div class="sel-h rh sel-tl" data-lc="tl"></div>
+          <div class="sel-h rh sel-tr" data-lc="tr"></div>
+          <div class="sel-h rh sel-bl" data-lc="bl"></div>
+          <div class="sel-h rh sel-br" data-lc="br"></div>
+          <div class="sel-h rh sel-tc" data-lc="tc"></div>
+          <div class="sel-h rh sel-bc" data-lc="bc"></div>
+          <div class="sel-h rh sel-ml" data-lc="ml"></div>
+          <div class="sel-h rh sel-mr" data-lc="mr"></div>
+        </div>
       </div>
 
       <div class="preview-label">375 × 562px · 출력 1125 × 1686px</div>
@@ -560,6 +593,14 @@
   const PRESET_JY = { x: 769.5, y: 384, w: 294, h: 70 };
   let logoScDataUrl = null;
   const LOGO_GUIDE = { x: 769.5, y: 384, w: 294, h: 123 }; /* Figma 로고 위치 3x: rel(256.5,128) 98×41 */
+  /* 로고 위치/크기 (canvas 3x coords) */
+  let logoScX = LOGO_GUIDE.x, logoScY = LOGO_GUIDE.y;
+  let logoScW = LOGO_GUIDE.w, logoScH = LOGO_GUIDE.h;
+  let logoScNatAsp = 1; /* natH / natW */
+  /* 로고 드래그 */
+  let isLogoDragging = false, ldStartX, ldStartY, ldLogoX0, ldLogoY0;
+  /* 로고 리사이즈 */
+  let isLogoResizing = false, lrCorner = '', lrStartX, lrStartY, lrW0, lrH0, lrX0, lrY0;
 
   const imgs = {};
   let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
@@ -615,6 +656,35 @@
     reader.readAsDataURL(file);
   }
 
+  function loadImgFromUrl(key) {
+    const el  = document.getElementById('url-' + key);
+    const url = el ? el.value.trim() : '';
+    if (!url) return;
+    const proxyImg = new Image();
+    proxyImg.onload = () => {
+      imgs[key] = url;
+      const ub = document.getElementById('ub-' + key);
+      if (ub) {
+        ub.style.backgroundImage    = `url(${url})`;
+        ub.style.backgroundSize     = 'cover';
+        ub.style.backgroundPosition = 'center';
+        ub.classList.add('has-img');
+      }
+      if (key === 'bg') {
+        natAspect = proxyImg.naturalHeight / proxyImg.naturalWidth;
+        minBgW    = Math.max(CW, CH / natAspect);
+        initBgCover(proxyImg.naturalWidth, proxyImg.naturalHeight);
+        document.getElementById('canvas').classList.add('has-img');
+        updateSel();
+        rp();
+      } else {
+        rp();
+      }
+    };
+    proxyImg.onerror = () => alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.');
+    proxyImg.src = url;
+  }
+
   function initBgCover(natW, natH) {
     const scale = Math.max(CW / natW, CH / natH);
     bgW = natW * scale;
@@ -664,7 +734,7 @@
     });
 
     /* ---- 모서리 핸들 리사이즈 ---- */
-    document.querySelectorAll('.rh').forEach(h => {
+    document.querySelectorAll('.rh[data-corner]').forEach(h => {
       h.addEventListener('mousedown', e => {
         isResizing = true;
         rCorner = h.dataset.corner;
@@ -721,6 +791,54 @@
         document.getElementById('canvas').classList.remove('dragging');
       }
       isResizing = false;
+      isLogoDragging = false;
+      isLogoResizing = false;
+    });
+
+    /* ---- 로고 드래그 ---- */
+    document.getElementById('logo-drag-sc').addEventListener('mousedown', e => {
+      if (!logoScDataUrl) return;
+      isLogoDragging = true;
+      ldStartX = e.clientX; ldStartY = e.clientY;
+      ldLogoX0 = logoScX;   ldLogoY0 = logoScY;
+      e.stopPropagation(); e.preventDefault();
+    });
+
+    /* ---- 로고 핸들 리사이즈 ---- */
+    document.querySelectorAll('#sel-overlay-logo .sel-h[data-lc]').forEach(h => {
+      h.addEventListener('mousedown', e => {
+        isLogoResizing = true;
+        lrCorner = h.dataset.lc;
+        lrStartX = e.clientX; lrStartY = e.clientY;
+        lrW0 = logoScW; lrH0 = logoScH; lrX0 = logoScX; lrY0 = logoScY;
+        e.stopPropagation(); e.preventDefault();
+      });
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (isLogoDragging) {
+        logoScX = ldLogoX0 + (e.clientX - ldStartX) / DS;
+        logoScY = ldLogoY0 + (e.clientY - ldStartY) / DS;
+        applyLogoSc();
+      }
+      if (isLogoResizing) {
+        const dx = (e.clientX - lrStartX) / DS;
+        const dy = (e.clientY - lrStartY) / DS;
+        const minW = 30;
+        let newW = lrW0, newH = lrH0;
+        switch(lrCorner) {
+          case 'br': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0; break;
+          case 'tr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0+lrH0-newH; break;
+          case 'bl': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0; break;
+          case 'tl': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0+lrH0-newH; break;
+          case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; logoScX=lrX0; logoScY=lrY0+(lrH0-newH)/2; break;
+          case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; logoScX=lrX0+lrW0-newW; logoScY=lrY0+(lrH0-newH)/2; break;
+          case 'bc': newH=Math.max(minW*logoScNatAsp,lrH0+dy); newW=newH/logoScNatAsp; logoScX=lrX0+(lrW0-newW)/2; logoScY=lrY0; break;
+          case 'tc': newH=Math.max(minW*logoScNatAsp,lrH0-dy); newW=newH/logoScNatAsp; logoScX=lrX0+(lrW0-newW)/2; logoScY=lrY0+lrH0-newH; break;
+        }
+        logoScW = newW; logoScH = newH;
+        applyLogoSc();
+      }
     });
   }
 
@@ -755,12 +873,62 @@
       ub.style.backgroundPosition = 'center';
       ub.style.backgroundRepeat   = 'no-repeat';
       ub.classList.add('has-img');
-      const el  = document.getElementById('cv-logo-sc');
-      const img = document.getElementById('cv-logo-sc-img');
-      img.src = logoScDataUrl;
-      el.style.display = 'block';
+      const tmpImg = new Image();
+      tmpImg.onload = () => {
+        const natW = tmpImg.naturalWidth  || 1;
+        const natH = tmpImg.naturalHeight || 1;
+        logoScNatAsp = natH / natW;
+        const sc = Math.min(LOGO_GUIDE.w / natW, LOGO_GUIDE.h / natH);
+        logoScW = Math.max(natW * sc, 30);
+        logoScH = logoScW * logoScNatAsp;
+        logoScX = LOGO_GUIDE.x + (LOGO_GUIDE.w - logoScW) / 2;
+        logoScY = LOGO_GUIDE.y + (LOGO_GUIDE.h - logoScH) / 2;
+        const el  = document.getElementById('cv-logo-sc');
+        const img = document.getElementById('cv-logo-sc-img');
+        img.src = logoScDataUrl;
+        el.style.display = 'block';
+        applyLogoSc();
+        document.getElementById('logo-guide-sc').classList.add('visible');
+      };
+      tmpImg.src = logoScDataUrl;
     };
     reader.readAsDataURL(file);
+  }
+
+  function clampLogoSc() {
+    const G = LOGO_GUIDE, m = 60; /* 20px display × 3 = 60 canvas px */
+    const minX = G.x - m;
+    const maxX = G.x + G.w + m - logoScW;
+    const minY = G.y - m;
+    const maxY = G.y + G.h + m - logoScH;
+    logoScX = Math.min(Math.max(logoScX, minX), Math.max(minX, maxX));
+    logoScY = Math.min(Math.max(logoScY, minY), Math.max(minY, maxY));
+    /* 쇼케이싱 우측 캔버스 경계 */
+    if (logoScX + logoScW > CW) logoScX = CW - logoScW;
+    if (logoScX < 0) logoScX = 0;
+  }
+
+  function applyLogoSc() {
+    clampLogoSc();
+    const el = document.getElementById('cv-logo-sc');
+    if (el) {
+      el.style.left   = logoScX + 'px';
+      el.style.top    = logoScY + 'px';
+      el.style.width  = logoScW + 'px';
+      el.style.height = logoScH + 'px';
+    }
+    updateLogoSelSc();
+  }
+
+  function updateLogoSelSc() {
+    const ov = document.getElementById('sel-overlay-logo');
+    if (!ov) return;
+    if (!logoScDataUrl) { ov.style.display = 'none'; return; }
+    ov.style.display = 'block';
+    ov.style.left    = (logoScX * DS) + 'px';
+    ov.style.top     = (logoScY * DS) + 'px';
+    ov.style.width   = (logoScW * DS) + 'px';
+    ov.style.height  = (logoScH * DS) + 'px';
   }
 
   function onWmToggle() {
@@ -823,16 +991,12 @@
         await new Promise(resolve => { pImg.onload = resolve; if (pImg.complete) resolve(); });
         ctx.drawImage(pImg, PRESET_JY.x, PRESET_JY.y, PRESET_JY.w, PRESET_JY.h);
       }
-      /* 커스텀 SVG 로고 (Logo Guide 영역, aspect-ratio 유지) */
+      /* 커스텀 SVG 로고 (사용자 조정 위치/크기) */
       if (logoScDataUrl) {
         const lImg = new Image();
         lImg.src = logoScDataUrl;
         await new Promise(resolve => { lImg.onload = resolve; if (lImg.complete) resolve(); });
-        const lw0 = lImg.naturalWidth || LOGO_GUIDE.w;
-        const lh0 = lImg.naturalHeight || LOGO_GUIDE.h;
-        const sc  = Math.min(LOGO_GUIDE.w / lw0, LOGO_GUIDE.h / lh0, 1);
-        const lw  = lw0 * sc, lh = lh0 * sc;
-        ctx.drawImage(lImg, LOGO_GUIDE.x + (LOGO_GUIDE.w - lw) / 2, LOGO_GUIDE.y + (LOGO_GUIDE.h - lh) / 2, lw, lh);
+        ctx.drawImage(lImg, logoScX, logoScY, logoScW, logoScH);
       }
 
       /* 유저명 표시 on이면 텍스트 추가 */
@@ -851,7 +1015,11 @@
       link.href     = out.toDataURL('image/png');
       link.click();
     } catch (e) {
-      alert('내보내기 오류: ' + e.message);
+      if (e.name === 'SecurityError') {
+        alert('URL로 삽입된 이미지는 보안 정책(CORS)으로 인해 PNG 내보내기가 제한됩니다.\n이미지를 파일로 직접 업로드 후 내보내기 해주세요.');
+      } else {
+        alert('내보내기 오류: ' + e.message);
+      }
     }
 
     prog.classList.remove('show');
