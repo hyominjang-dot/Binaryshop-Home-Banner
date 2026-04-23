@@ -641,6 +641,13 @@
       if (key === 'bg') {
         const img = new Image();
         img.onload = () => {
+          if (Math.max(img.naturalWidth, img.naturalHeight) <= 200) {
+            alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
+            imgs[key] = null;
+            if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
+            event.target.value = '';
+            return;
+          }
           natAspect = img.naturalHeight / img.naturalWidth;
           minBgW    = Math.max(CW, CH / natAspect);
           initBgCover(img.naturalWidth, img.naturalHeight);
@@ -662,6 +669,10 @@
     if (!url) return;
     const proxyImg = new Image();
     proxyImg.onload = () => {
+      if (Math.max(proxyImg.naturalWidth, proxyImg.naturalHeight) <= 200) {
+        alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
+        return;
+      }
       imgs[key] = url;
       const ub = document.getElementById('ub-' + key);
       if (ub) {

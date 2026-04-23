@@ -103,6 +103,9 @@
       transition: border-color 0.15s; outline: none;
     }
     .fi:focus { border-color: #999; background: #fff; }
+    .url-row { display: flex; gap: 6px; margin-top: 8px; }
+    .url-btn { flex-shrink: 0; padding: 0 12px; height: 36px; background: var(--gray2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-family: var(--ff); color: var(--black); cursor: pointer; white-space: nowrap; }
+    .url-btn:hover { background: var(--border); }
 
     .upload-box {
       width: 100%; aspect-ratio: 1;
@@ -347,6 +350,10 @@
               <input type="file" accept="image/*" onchange="loadImg(event,'bg')">
               <span class="upload-lbl">+ 이미지 업로드</span>
             </div>
+            <div class="url-row">
+              <input type="text" class="fi" id="url-bg" placeholder="또는 이미지 URL 입력" style="font-size:12px" onkeydown="if(event.key==='Enter')loadImgFromUrl('bg')">
+              <button class="url-btn" onclick="loadImgFromUrl('bg')">적용</button>
+            </div>
           </div>
         </div>
       </div>
@@ -515,6 +522,13 @@
       if (key === 'bg') {
         const img = new Image();
         img.onload = () => {
+          if (Math.max(img.naturalWidth, img.naturalHeight) <= 200) {
+            alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
+            imgs[key] = null;
+            if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
+            event.target.value = '';
+            return;
+          }
           natAspect = img.naturalHeight / img.naturalWidth;
           minBgW    = Math.max(CW, CH / natAspect);
           initBgCover(img.naturalWidth, img.naturalHeight);
@@ -528,6 +542,39 @@
       }
     };
     reader.readAsDataURL(file);
+  }
+
+  function loadImgFromUrl(key) {
+    const el  = document.getElementById('url-' + key);
+    const url = el ? el.value.trim() : '';
+    if (!url) return;
+    const proxyImg = new Image();
+    proxyImg.onload = () => {
+      if (Math.max(proxyImg.naturalWidth, proxyImg.naturalHeight) <= 200) {
+        alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
+        return;
+      }
+      imgs[key] = url;
+      const ub = document.getElementById('ub-' + key);
+      if (ub) {
+        ub.style.backgroundImage    = `url(${url})`;
+        ub.style.backgroundSize     = 'cover';
+        ub.style.backgroundPosition = 'center';
+        ub.classList.add('has-img');
+      }
+      if (key === 'bg') {
+        natAspect = proxyImg.naturalHeight / proxyImg.naturalWidth;
+        minBgW    = Math.max(CW, CH / natAspect);
+        initBgCover(proxyImg.naturalWidth, proxyImg.naturalHeight);
+        document.getElementById('canvas').classList.add('has-img');
+        updateSel();
+        rp();
+      } else {
+        rp();
+      }
+    };
+    proxyImg.onerror = () => alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.');
+    proxyImg.src = url;
   }
 
   function initBgCover(natW, natH) {
@@ -697,7 +744,11 @@
       link.href     = out.toDataURL('image/png');
       link.click();
     } catch (e) {
-      alert('내보내기 오류: ' + e.message);
+      if (e.name === 'SecurityError') {
+        alert('URL로 삽입된 이미지는 보안 정책(CORS)으로 인해 PNG 내보내기가 제한됩니다.\n이미지를 파일로 직접 업로드 후 내보내기 해주세요.');
+      } else {
+        alert('내보내기 오류: ' + e.message);
+      }
     }
 
     prog.classList.remove('show');
