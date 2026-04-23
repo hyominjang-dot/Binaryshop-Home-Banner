@@ -823,15 +823,21 @@
         const dy = (e.clientY - lrStartY) / DS;
         const minW = 30;
         let newW = lrW0, newH = lrH0;
-        /* 우정렬 고정: 모든 핸들이 우측 엣지(lrX0+lrW0)를 기준으로 확대축소 */
+        /* 우정렬 고정: 가이드 우측 엣지(G.x+G.w=1063.5)를 기준으로 확대축소 */
         switch(lrCorner) {
           case 'br': case 'tr': case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; break;
           case 'bl': case 'tl': case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; break;
           case 'bc': newH=Math.max(minW*logoScNatAsp,lrH0+dy); newW=newH/logoScNatAsp; break;
           case 'tc': newH=Math.max(minW*logoScNatAsp,lrH0-dy); newW=newH/logoScNatAsp; break;
         }
-        logoScX = lrX0 + lrW0 - newW; /* 우측 엣지 고정 */
-        logoScY = lrY0;                 /* 상단 고정 */
+        /* 가이드 기준 최대 20px(display)=60px(canvas) 초과 확대 잠금 */
+        const G = LOGO_GUIDE, m = 60;
+        const maxW        = G.w + m;                                      /* 좌: G.x-m까지 허용 → 최대 폭 354 */
+        const maxHfromBot = Math.max(minW * logoScNatAsp, G.y + G.h + m - lrY0); /* 하: G.y+G.h+m까지 허용 */
+        newW = Math.min(newW, maxW, maxHfromBot / logoScNatAsp);
+        newH = newW * logoScNatAsp;
+        logoScX = G.x + G.w - newW; /* 가이드 우측 엣지 고정 */
+        logoScY = lrY0;              /* 상단 고정 */
         logoScW = newW; logoScH = newH;
         applyLogoSc();
       }
@@ -882,8 +888,8 @@
         const sc = Math.min(LOGO_GUIDE.w / natW, LOGO_GUIDE.h / natH);
         logoScW = Math.max(natW * sc, 30);
         logoScH = logoScW * logoScNatAsp;
-        logoScX = LOGO_GUIDE.x + (LOGO_GUIDE.w - logoScW) / 2;
-        logoScY = LOGO_GUIDE.y + (LOGO_GUIDE.h - logoScH) / 2;
+        logoScX = LOGO_GUIDE.x + LOGO_GUIDE.w - logoScW; /* 우측 정렬 */
+        logoScY = LOGO_GUIDE.y + (LOGO_GUIDE.h - logoScH) / 2; /* 세로 중앙 */
         const el  = document.getElementById('cv-logo-sc');
         const img = document.getElementById('cv-logo-sc-img');
         img.src = logoScDataUrl;
@@ -898,15 +904,12 @@
 
   function clampLogoSc() {
     const G = LOGO_GUIDE, m = 60; /* 20px display × 3 = 60 canvas px */
-    const minX = G.x - m;
-    const maxX = G.x + G.w + m - logoScW;
+    /* 우측 엣지를 가이드 우측(G.x + G.w)에 항상 고정 */
+    logoScX = G.x + G.w - logoScW;
+    /* Y 클램프: 가이드 ±20px(display) */
     const minY = G.y - m;
     const maxY = G.y + G.h + m - logoScH;
-    logoScX = Math.min(Math.max(logoScX, minX), Math.max(minX, maxX));
     logoScY = Math.min(Math.max(logoScY, minY), Math.max(minY, maxY));
-    /* 쇼케이싱 우측 캔버스 경계 */
-    if (logoScX + logoScW > CW) logoScX = CW - logoScW;
-    if (logoScX < 0) logoScX = 0;
   }
 
   function applyLogoSc() {
