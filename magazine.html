@@ -678,6 +678,11 @@
   function loadLogo(event) {
     const file = event.target.files[0];
     if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.svg') && file.type !== 'image/svg+xml') {
+      alert('파일 확장자가 맞지 않습니다.\nSVG 파일만 업로드할 수 있습니다.');
+      event.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       logoDataUrl = e.target.result;
