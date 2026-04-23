@@ -823,7 +823,8 @@
         const dy = (e.clientY - lrStartY) / DS;
         const minW = 30;
         let newW = lrW0, newH = lrH0;
-        /* 우정렬 고정: 가이드 우측 엣지(G.x+G.w=1063.5)를 기준으로 확대축소 */
+        /* 우정렬 + 세로 중앙 고정: 우측 엣지(G.x+G.w)·세로중심(cy) 기준 확대축소 */
+        const cy = lrY0 + lrH0 / 2; /* 리사이즈 시작 시점의 세로 중심 */
         switch(lrCorner) {
           case 'br': case 'tr': case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; break;
           case 'bl': case 'tl': case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; break;
@@ -832,12 +833,12 @@
         }
         /* 가이드 기준 최대 20px(display)=60px(canvas) 초과 확대 잠금 */
         const G = LOGO_GUIDE, m = 60;
-        const maxW        = G.w + m;                                      /* 좌: G.x-m까지 허용 → 최대 폭 354 */
-        const maxHfromBot = Math.max(minW * logoScNatAsp, G.y + G.h + m - lrY0); /* 하: G.y+G.h+m까지 허용 */
-        newW = Math.min(newW, maxW, maxHfromBot / logoScNatAsp);
+        const maxW  = G.w + m;                              /* 좌: G.x-m까지 허용 */
+        const maxH  = Math.min(2*(cy-(G.y-m)), 2*(G.y+G.h+m-cy)); /* 상/하 대칭 */
+        newW = Math.min(newW, maxW, Math.max(minW, maxH / logoScNatAsp));
         newH = newW * logoScNatAsp;
-        logoScX = G.x + G.w - newW; /* 가이드 우측 엣지 고정 */
-        logoScY = lrY0;              /* 상단 고정 */
+        logoScX = G.x + G.w - newW;  /* 가이드 우측 엣지 고정 */
+        logoScY = cy - newH / 2;      /* 세로 중앙 고정 → 상/하 동시 확대 */
         logoScW = newW; logoScH = newH;
         applyLogoSc();
       }
