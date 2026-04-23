@@ -697,6 +697,11 @@
         logoH = logoW * logoNatAsp;
         logoX = LOGO_GUIDE_MG.x + (LOGO_GUIDE_MG.w - logoW) / 2;
         logoY = LOGO_GUIDE_MG.y + (LOGO_GUIDE_MG.h - logoH) / 2;
+        /* 커스텀 로고 삽입 → 프리셋 토글 모두 끄기 */
+        document.getElementById('preset-he-on').checked = false;
+        document.getElementById('preset-bl-on').checked = false;
+        document.getElementById('cv-preset-he').style.display = 'none';
+        document.getElementById('cv-preset-bl').style.display = 'none';
         const logoEl  = document.getElementById('cv-logo');
         const logoImg = document.getElementById('cv-logo-img');
         logoImg.src = logoDataUrl;
@@ -858,17 +863,25 @@
         const dx = (e.clientX - lrStartX) / DS;
         const dy = (e.clientY - lrStartY) / DS;
         const minW = 30;
-        let newW = lrW0, newH = lrH0;
+        /* 중앙 고정: 리사이즈 시작 시점의 중심점 유지 */
+        const cx = lrX0 + lrW0 / 2;
+        const cy = lrY0 + lrH0 / 2;
+        let newW;
         switch(lrCorner) {
-          case 'br': newW=Math.max(minW,lrW0+dx); newH=newW*logoNatAsp; logoX=lrX0; logoY=lrY0; break;
-          case 'tr': newW=Math.max(minW,lrW0+dx); newH=newW*logoNatAsp; logoX=lrX0; logoY=lrY0+lrH0-newH; break;
-          case 'bl': newW=Math.max(minW,lrW0-dx); newH=newW*logoNatAsp; logoX=lrX0+lrW0-newW; logoY=lrY0; break;
-          case 'tl': newW=Math.max(minW,lrW0-dx); newH=newW*logoNatAsp; logoX=lrX0+lrW0-newW; logoY=lrY0+lrH0-newH; break;
-          case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoNatAsp; logoX=lrX0; logoY=lrY0+(lrH0-newH)/2; break;
-          case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoNatAsp; logoX=lrX0+lrW0-newW; logoY=lrY0+(lrH0-newH)/2; break;
-          case 'bc': newH=Math.max(minW*logoNatAsp,lrH0+dy); newW=newH/logoNatAsp; logoX=lrX0+(lrW0-newW)/2; logoY=lrY0; break;
-          case 'tc': newH=Math.max(minW*logoNatAsp,lrH0-dy); newW=newH/logoNatAsp; logoX=lrX0+(lrW0-newW)/2; logoY=lrY0+lrH0-newH; break;
+          case 'br': case 'tr': case 'mr': newW = Math.max(minW, lrW0 + dx); break;
+          case 'bl': case 'tl': case 'ml': newW = Math.max(minW, lrW0 - dx); break;
+          case 'bc': newW = Math.max(minW, (lrH0 + dy) / logoNatAsp); break;
+          case 'tc': newW = Math.max(minW, (lrH0 - dy) / logoNatAsp); break;
+          default:   newW = lrW0;
         }
+        /* 가이드 기준 20px(display)=60px(canvas) 초과 확대 잠금 */
+        const G = LOGO_GUIDE_MG, m = 60;
+        const maxW = Math.min(2 * (cx - (G.x - m)), 2 * ((G.x + G.w + m) - cx));
+        const maxH = Math.min(2 * (cy - (G.y - m)), 2 * ((G.y + G.h + m) - cy));
+        newW = Math.min(newW, maxW, maxH / logoNatAsp);
+        const newH = newW * logoNatAsp;
+        logoX = cx - newW / 2;
+        logoY = cy - newH / 2;
         logoW = newW; logoH = newH;
         applyLogoMg();
       }
