@@ -405,6 +405,14 @@
       font-size: 9px; font-weight: 700;
       padding: 2px 6px; border-radius: 4px; pointer-events: none;
     }
+    /* ── Drag & Drop reorder ── */
+    .mp-slot[draggable="true"] { cursor: grab; }
+    .mp-slot.dragging { opacity: 0.35; box-shadow: 0 0 0 2.5px var(--gray3) !important; }
+    .mp-slot.drag-over { box-shadow: 0 0 0 2.5px #ff7a00 !important; }
+    .mp-slot.drag-over::after {
+      content: ''; position: absolute; inset: 0; z-index: 20;
+      background: rgba(255, 122, 0, 0.13); border-radius: 8px; pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -791,7 +799,8 @@
   ══════════════════════════════════════════ */
   const BANNERS = [];
   let currentBanner = 0;
-  let thumbPage = 0; /* 0-based page index for the 5-thumb strip */
+  let thumbPage = 0;     /* 0-based page index for the 5-thumb strip */
+  let dragSrcIdx  = -1;  /* banner index being dragged (-1 = none) */
 
   function createBanner() {
     return {
@@ -970,6 +979,26 @@
     renderThumbStrip();
   }
 
+  function reorderBanners(fromIdx, toIdx) {
+    if (fromIdx === toIdx) return;
+    saveBanner(currentBanner);
+    const [moved] = BANNERS.splice(fromIdx, 1);
+    BANNERS.splice(toIdx, 0, moved);
+    /* currentBanner가 이동한 배너면 새 위치로, 아니면 밀린 방향에 따라 보정 */
+    if (currentBanner === fromIdx) {
+      currentBanner = toIdx;
+    } else if (fromIdx < toIdx) {
+      if (currentBanner > fromIdx && currentBanner <= toIdx) currentBanner--;
+    } else {
+      if (currentBanner >= toIdx && currentBanner < fromIdx) currentBanner++;
+    }
+    const pg = Math.floor(currentBanner / 5);
+    if (pg !== thumbPage) thumbPage = pg;
+    loadBanner(currentBanner);
+    updateBannerNav();
+    renderThumbStrip();
+  }
+
   function updateThumbPageNav() {
     const total = Math.max(1, Math.ceil(BANNERS.length / 5));
     document.getElementById('tp-count').textContent = `${thumbPage + 1} / ${total}`;
@@ -1069,6 +1098,41 @@
 
     frame.appendChild(mc);
     slotEl.appendChild(frame);
+
+    /* ── 드래그 & 드롭 순서 변경 ── */
+    slotEl.draggable = true;
+    slotEl.ondragstart = e => {
+      dragSrcIdx = bannerIdx;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(bannerIdx));
+      /* requestAnimationFrame: Firefox에서 ghost image 생성 후 opacity 적용 */
+      requestAnimationFrame(() => slotEl.classList.add('dragging'));
+    };
+    slotEl.ondragend = () => {
+      slotEl.classList.remove('dragging');
+      document.querySelectorAll('.mp-slot').forEach(s => s.classList.remove('drag-over'));
+      dragSrcIdx = -1;
+    };
+    slotEl.ondragover = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragSrcIdx >= 0 && bannerIdx !== dragSrcIdx) {
+        document.querySelectorAll('.mp-slot').forEach(s => s.classList.remove('drag-over'));
+        slotEl.classList.add('drag-over');
+      }
+    };
+    slotEl.ondragleave = e => {
+      /* 자식 요소로 이동하는 경우는 무시 */
+      if (!slotEl.contains(e.relatedTarget)) slotEl.classList.remove('drag-over');
+    };
+    slotEl.ondrop = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      slotEl.classList.remove('drag-over');
+      const src = dragSrcIdx;
+      dragSrcIdx = -1;
+      if (src >= 0 && src !== bannerIdx) reorderBanners(src, bannerIdx);
+    };
 
     /* 배너 번호 뱃지 */
     const badge = document.createElement('div');
