@@ -51,7 +51,7 @@
     /* ── Left Panel ── */
     .panel {
       background: var(--panel); border-right: 1px solid var(--border);
-      display: grid; grid-template-rows: auto 1fr 56px; overflow: hidden;
+      display: grid; grid-template-rows: auto auto 1fr 56px; overflow: hidden;
     }
     .panel-scroll { overflow-y: auto; padding: 16px 0 0; }
 
@@ -311,6 +311,90 @@
     .exp-prog p { font-size: 14px; color: #fff; font-weight: 600; }
     .spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Banner Navigation ── */
+    .banner-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .bnav-arrows { display: flex; align-items: center; gap: 6px; }
+    .bnav-btn {
+      width: 26px; height: 26px;
+      background: var(--gray2); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 17px; font-family: var(--ff);
+      color: var(--black); cursor: pointer; padding: 0; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bnav-btn:hover:not(:disabled) { background: var(--border); }
+    .bnav-btn:disabled { opacity: 0.35; cursor: default; }
+    .bnav-count {
+      font-size: 12px; font-weight: 600; min-width: 44px; text-align: center;
+      color: var(--black);
+    }
+    .bnav-add {
+      height: 26px; padding: 0 10px;
+      background: var(--black); color: #fff; border: none;
+      border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--ff);
+      cursor: pointer; white-space: nowrap;
+    }
+    .bnav-add:hover:not(:disabled) { opacity: 0.8; }
+    .bnav-add:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── Thumbnail Strip ── */
+    .thumb-strip-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding-top: 2px;
+    }
+    .thumb-page-nav { display: flex; align-items: center; gap: 6px; }
+    .tpnav-btn {
+      width: 24px; height: 24px;
+      background: var(--gray2); border: 1px solid var(--border);
+      border-radius: 5px; font-size: 15px; font-family: var(--ff);
+      color: var(--black); cursor: pointer; padding: 0; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tpnav-btn:hover:not(:disabled) { background: var(--border); }
+    .tpnav-btn:disabled { opacity: 0.35; cursor: default; }
+    .tpnav-count {
+      font-size: 11px; font-weight: 600; min-width: 36px; text-align: center;
+      color: var(--gray4);
+    }
+    .thumb-strip { display: flex; gap: 5px; }
+    .mini-thumb {
+      width: 70px; height: 105px;
+      border-radius: 6px; overflow: hidden;
+      border: 2px solid transparent;
+      cursor: pointer; position: relative;
+      background: var(--gray2);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+    }
+    .mini-thumb:hover { border-color: var(--gray3); }
+    .mini-thumb.active { border-color: #1b6ef3; }
+    .mini-thumb.empty { cursor: default; opacity: 0.4; pointer-events: none; }
+    .mt-grad {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0) 100%);
+      pointer-events: none;
+    }
+    .mt-title {
+      position: absolute; bottom: 11px; left: 5px; right: 5px;
+      font-size: 6.5px; font-weight: 400; color: #fff;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      pointer-events: none; line-height: 1.3;
+    }
+    .mt-badge {
+      position: absolute; top: 4px; left: 4px;
+      background: rgba(0,0,0,0.55); color: #fff;
+      font-size: 8px; font-weight: 700;
+      padding: 1px 5px; border-radius: 4px;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -333,6 +417,16 @@
       <a class="tab-item active" href="showcasing.html">Showcasing</a>
       <a class="tab-item" href="brand.html">Featured Brand</a>
       <a class="tab-item" href="magazine.html">Binary Magazine</a>
+    </div>
+
+    <!-- Banner Navigation -->
+    <div class="banner-nav">
+      <div class="bnav-arrows">
+        <button class="bnav-btn" id="bnav-prev" onclick="prevBanner()">&#8249;</button>
+        <span class="bnav-count" id="bnav-count">1 / 1</span>
+        <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
+      </div>
+      <button class="bnav-add" id="bnav-add" onclick="addBanner()">+ 추가</button>
     </div>
 
     <div class="panel-scroll">
@@ -575,6 +669,22 @@
 
       <div class="preview-label">375 × 562px · 출력 1125 × 1686px</div>
       <div style="font-size:11px; color:var(--gray3); margin-top:-6px;">사진 이동 및 모서리 드래그로 확대 가능</div>
+
+      <!-- Thumbnail Strip -->
+      <div class="thumb-strip-wrap">
+        <div class="thumb-page-nav">
+          <button class="tpnav-btn" id="tp-prev" onclick="prevThumbPage()">&#8249;</button>
+          <span class="tpnav-count" id="tp-count">1 / 1</span>
+          <button class="tpnav-btn" id="tp-next" onclick="nextThumbPage()">&#8250;</button>
+        </div>
+        <div class="thumb-strip">
+          <div class="mini-thumb" id="mt-0" onclick="onThumbClick(0)"></div>
+          <div class="mini-thumb" id="mt-1" onclick="onThumbClick(1)"></div>
+          <div class="mini-thumb" id="mt-2" onclick="onThumbClick(2)"></div>
+          <div class="mini-thumb" id="mt-3" onclick="onThumbClick(3)"></div>
+          <div class="mini-thumb" id="mt-4" onclick="onThumbClick(4)"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -602,7 +712,7 @@
   /* 로고 리사이즈 */
   let isLogoResizing = false, lrCorner = '', lrStartX, lrStartY, lrW0, lrH0, lrX0, lrY0;
 
-  const imgs = {};
+  let imgs = {}; /* let (was const) – reassigned on banner switch */
   let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
   let natAspect = 1; /* natH / natW */
   let minBgW = CW;
@@ -616,8 +726,247 @@
   let rCorner = '';
   let rStartX, rStartY, rBgW0, rBgH0, rBgX0, rBgY0;
 
+  /* ══════════════════════════════════════════
+     Multi-banner state
+  ══════════════════════════════════════════ */
+  const BANNERS = [];
+  let currentBanner = 0;
+  let thumbPage = 0; /* 0-based page index for the 5-thumb strip */
+
+  function createBanner() {
+    return {
+      imgs: {}, bgW: 0, bgH: 0, bgX: 0, bgY: 0,
+      natAspect: 1, minBgW: CW,
+      logoScDataUrl: null,
+      logoScX: LOGO_GUIDE.x, logoScY: LOGO_GUIDE.y,
+      logoScW: LOGO_GUIDE.w, logoScH: LOGO_GUIDE.h,
+      logoScNatAsp: 1,
+      gradOn: true,
+      category: 'Brandcast',
+      title: '싱그러운 여름의 향기',
+      subtitle: 'PATH.B ~20%',
+      presetJyOn: false,
+      wmOn: false,
+      wmName: '오늘의집 유저명',
+      ubBgSrc: '', ubBgHasImg: false,
+      ubLogoSrc: '', ubLogoHasImg: false
+    };
+  }
+
+  function saveBanner(idx) {
+    const b = BANNERS[idx];
+    if (!b) return;
+    /* live state vars */
+    b.imgs = Object.assign({}, imgs);
+    b.bgW = bgW; b.bgH = bgH; b.bgX = bgX; b.bgY = bgY;
+    b.natAspect = natAspect; b.minBgW = minBgW;
+    b.logoScDataUrl = logoScDataUrl;
+    b.logoScX = logoScX; b.logoScY = logoScY;
+    b.logoScW = logoScW; b.logoScH = logoScH;
+    b.logoScNatAsp = logoScNatAsp;
+    /* form fields */
+    b.gradOn     = document.getElementById('f-grad-on').checked;
+    b.category   = document.getElementById('f-category').value;
+    b.title      = document.getElementById('f-title').value;
+    b.subtitle   = document.getElementById('f-subtitle').value;
+    b.presetJyOn = document.getElementById('preset-jy-on').checked;
+    b.wmOn       = document.getElementById('f-wm-on').checked;
+    b.wmName     = document.getElementById('f-wm-name').value;
+    /* upload box visuals */
+    const ubBg = document.getElementById('ub-bg');
+    b.ubBgSrc    = ubBg ? ubBg.style.backgroundImage : '';
+    b.ubBgHasImg = ubBg ? ubBg.classList.contains('has-img') : false;
+    const ubLogo = document.getElementById('ub-logo-sc');
+    b.ubLogoSrc    = ubLogo ? ubLogo.style.backgroundImage : '';
+    b.ubLogoHasImg = ubLogo ? ubLogo.classList.contains('has-img') : false;
+  }
+
+  function loadBanner(idx) {
+    const b = BANNERS[idx];
+    if (!b) return;
+    /* restore live state vars */
+    imgs = Object.assign({}, b.imgs);
+    bgW = b.bgW; bgH = b.bgH; bgX = b.bgX; bgY = b.bgY;
+    natAspect = b.natAspect; minBgW = b.minBgW;
+    logoScDataUrl = b.logoScDataUrl;
+    logoScX = b.logoScX; logoScY = b.logoScY;
+    logoScW = b.logoScW; logoScH = b.logoScH;
+    logoScNatAsp = b.logoScNatAsp;
+    /* restore form fields */
+    document.getElementById('f-grad-on').checked    = b.gradOn;
+    document.getElementById('f-category').value     = b.category;
+    document.getElementById('f-title').value        = b.title;
+    document.getElementById('f-subtitle').value     = b.subtitle;
+    document.getElementById('preset-jy-on').checked = b.presetJyOn;
+    document.getElementById('f-wm-on').checked      = b.wmOn;
+    document.getElementById('f-wm-name').value      = b.wmName;
+    /* restore upload box visuals */
+    const ubBg = document.getElementById('ub-bg');
+    if (ubBg) {
+      ubBg.style.backgroundImage = b.ubBgSrc || '';
+      b.ubBgHasImg ? ubBg.classList.add('has-img') : ubBg.classList.remove('has-img');
+    }
+    const ubLogo = document.getElementById('ub-logo-sc');
+    if (ubLogo) {
+      ubLogo.style.backgroundImage = b.ubLogoSrc || '';
+      b.ubLogoHasImg ? ubLogo.classList.add('has-img') : ubLogo.classList.remove('has-img');
+    }
+    /* canvas has-img */
+    const canvasEl = document.getElementById('canvas');
+    imgs['bg'] ? canvasEl.classList.add('has-img') : canvasEl.classList.remove('has-img');
+    /* preset logo */
+    const presetEl  = document.getElementById('cv-preset-jy');
+    const presetImg = document.getElementById('cv-preset-jy-img');
+    if (b.presetJyOn) { presetImg.src = PRESET_JY_SRC; presetEl.style.display = 'block'; }
+    else              { presetEl.style.display = 'none'; }
+    /* custom logo */
+    const logoEl  = document.getElementById('cv-logo-sc');
+    const logoImg = document.getElementById('cv-logo-sc-img');
+    if (b.logoScDataUrl) {
+      logoImg.src = b.logoScDataUrl;
+      logoEl.style.display = 'block';
+      document.getElementById('logo-guide-sc').classList.add('visible');
+    } else {
+      logoEl.style.display = 'none';
+      document.getElementById('logo-guide-sc').classList.remove('visible');
+    }
+    /* wm-row visibility */
+    document.getElementById('wm-row').style.display = b.wmOn ? 'block' : 'none';
+    /* re-render canvas + sel overlays */
+    updateLogoSelSc();
+    rp();
+  }
+
+  function goBanner(idx) {
+    if (idx < 0 || idx >= BANNERS.length) return;
+    saveBanner(currentBanner);
+    currentBanner = idx;
+    /* ensure thumb strip page shows the target banner */
+    const pg = Math.floor(idx / 5);
+    if (pg !== thumbPage) thumbPage = pg;
+    loadBanner(idx);
+    updateBannerNav();
+    renderThumbStrip();
+  }
+
+  function addBanner() {
+    if (BANNERS.length >= 15) {
+      alert('배너는 최대 15개까지 추가할 수 있습니다.');
+      return;
+    }
+    saveBanner(currentBanner);
+    BANNERS.push(createBanner());
+    const newIdx = BANNERS.length - 1;
+    currentBanner = newIdx;
+    const pg = Math.floor(newIdx / 5);
+    if (pg !== thumbPage) thumbPage = pg;
+    loadBanner(currentBanner);
+    updateBannerNav();
+    renderThumbStrip();
+  }
+
+  function prevBanner() {
+    if (currentBanner > 0) goBanner(currentBanner - 1);
+  }
+
+  function nextBanner() {
+    if (currentBanner < BANNERS.length - 1) goBanner(currentBanner + 1);
+  }
+
+  function prevThumbPage() {
+    if (thumbPage > 0) { thumbPage--; renderThumbStrip(); }
+  }
+
+  function nextThumbPage() {
+    const maxPage = Math.max(0, Math.ceil(BANNERS.length / 5) - 1);
+    if (thumbPage < maxPage) { thumbPage++; renderThumbStrip(); }
+  }
+
+  function onThumbClick(slot) {
+    const idx = thumbPage * 5 + slot;
+    if (idx < BANNERS.length) goBanner(idx);
+  }
+
+  function updateBannerNav() {
+    document.getElementById('bnav-count').textContent = `${currentBanner + 1} / ${BANNERS.length}`;
+    document.getElementById('bnav-prev').disabled = currentBanner === 0;
+    document.getElementById('bnav-next').disabled = currentBanner >= BANNERS.length - 1;
+    document.getElementById('bnav-add').disabled  = BANNERS.length >= 15;
+  }
+
+  function updateThumbPageNav() {
+    const total = Math.max(1, Math.ceil(BANNERS.length / 5));
+    document.getElementById('tp-count').textContent = `${thumbPage + 1} / ${total}`;
+    document.getElementById('tp-prev').disabled = thumbPage === 0;
+    document.getElementById('tp-next').disabled = thumbPage >= total - 1;
+  }
+
+  function renderThumb(slotEl, bannerIdx) {
+    slotEl.innerHTML = '';
+    slotEl.className = 'mini-thumb';
+    if (bannerIdx >= BANNERS.length) {
+      slotEl.classList.add('empty');
+      slotEl.style.backgroundImage    = '';
+      slotEl.style.backgroundSize     = '';
+      slotEl.style.backgroundPosition = '';
+      return;
+    }
+    if (bannerIdx === currentBanner) slotEl.classList.add('active');
+    const b  = BANNERS[bannerIdx];
+    const TS = 70 / CW; /* mini-thumb scale: 70px / 1125px */
+    if (b.imgs && b.imgs['bg']) {
+      slotEl.style.backgroundImage    = `url(${b.imgs['bg']})`;
+      slotEl.style.backgroundSize     = `${b.bgW * TS}px ${b.bgH * TS}px`;
+      slotEl.style.backgroundPosition = `${b.bgX * TS}px ${b.bgY * TS}px`;
+      slotEl.style.backgroundRepeat   = 'no-repeat';
+    } else {
+      slotEl.style.backgroundImage    = '';
+      slotEl.style.backgroundSize     = '';
+      slotEl.style.backgroundPosition = '';
+    }
+    if (b.gradOn) {
+      const grad = document.createElement('div');
+      grad.className = 'mt-grad';
+      slotEl.appendChild(grad);
+    }
+    if (b.gradOn && b.title) {
+      const txt = document.createElement('div');
+      txt.className = 'mt-title';
+      txt.textContent = b.title;
+      slotEl.appendChild(txt);
+    }
+    const badge = document.createElement('div');
+    badge.className = 'mt-badge';
+    badge.textContent = bannerIdx + 1;
+    slotEl.appendChild(badge);
+  }
+
+  function renderThumbStrip() {
+    for (let slot = 0; slot < 5; slot++) {
+      const slotEl = document.getElementById(`mt-${slot}`);
+      if (slotEl) renderThumb(slotEl, thumbPage * 5 + slot);
+    }
+    updateThumbPageNav();
+  }
+
+  function updateActiveThumb() {
+    if (!BANNERS.length) return;
+    saveBanner(currentBanner);
+    const slot = currentBanner - thumbPage * 5;
+    if (slot >= 0 && slot < 5) {
+      const slotEl = document.getElementById(`mt-${slot}`);
+      if (slotEl) renderThumb(slotEl, currentBanner);
+    }
+  }
+
   /* ──────────────── */
-  window.onload = () => { rp(); initInteraction(); };
+  window.onload = () => {
+    BANNERS.push(createBanner());
+    updateBannerNav();
+    renderThumbStrip();
+    rp();
+    initInteraction();
+  };
 
   function toggleSec(hd) {
     hd.nextElementSibling.classList.toggle('open');
@@ -794,6 +1143,9 @@
         clampBg();
         applyBg(); updateSel();
       }
+
+      /* update active thumbnail after any bg change */
+      if ((isDragging || isResizing) && BANNERS.length > 0) updateActiveThumb();
     });
 
     document.addEventListener('mouseup', () => {
@@ -962,6 +1314,9 @@
     const wmEl   = document.getElementById('cv-photo-by');
     wmEl.style.display = wmOn ? '' : 'none';
     if (wmOn) wmEl.textContent = `Photo by. ${document.getElementById('f-wm-name')?.value || ''}`;
+
+    /* update active thumbnail to reflect current state */
+    if (BANNERS.length > 0) updateActiveThumb();
   }
 
   function doReset() { location.reload(); }
