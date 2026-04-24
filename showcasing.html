@@ -742,6 +742,50 @@
   let rCorner = '';
   let rStartX, rStartY, rBgW0, rBgH0, rBgX0, rBgY0;
 
+  /* ── Mini Preview: App Chrome HTML (메인 캔버스와 동일한 SVG) ── */
+  const MP_CHROME_HTML =
+    '<div class="cv-status">' +
+      '<span class="cv-status-time">9:41</span>' +
+      '<div class="cv-status-icons">' +
+        '<svg width="51" height="36" viewBox="0 0 17 12" fill="white">' +
+          '<rect x="0" y="8" width="3" height="4" rx="0.5"/>' +
+          '<rect x="4.5" y="5.5" width="3" height="6.5" rx="0.5"/>' +
+          '<rect x="9" y="3" width="3" height="9" rx="0.5"/>' +
+          '<rect x="13.5" y="0" width="3" height="12" rx="0.5" opacity="0.3"/>' +
+        '</svg>' +
+        '<svg width="48" height="36" viewBox="0 0 16 12" fill="none">' +
+          '<path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="white"/>' +
+          '<path d="M4.2 7.3A5.4 5.4 0 0 1 8 5.8c1.46 0 2.78.58 3.75 1.52" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>' +
+          '<path d="M1.5 4.8A8.7 8.7 0 0 1 8 2c2.5 0 4.76 1.04 6.38 2.72" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>' +
+        '</svg>' +
+        '<svg width="75" height="36" viewBox="0 0 25 12" fill="none">' +
+          '<rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/>' +
+          '<rect x="2" y="2" width="18" height="8" rx="2" fill="white"/>' +
+          '<path d="M23 4v4a2 2 0 0 0 0-4z" fill="white" opacity="0.4"/>' +
+        '</svg>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cv-nav">' +
+      '<div class="cv-nav-left">' +
+        '<span class="cv-nav-shop">쇼핑</span>' +
+        '<span class="cv-nav-brand">BinaryShōp</span>' +
+      '</div>' +
+      '<div class="cv-nav-right">' +
+        '<svg width="66" height="66" viewBox="0 0 22 22" fill="none">' +
+          '<circle cx="10" cy="10" r="6.5" stroke="white" stroke-width="1.8"/>' +
+          '<path d="M15 15l4 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>' +
+        '</svg>' +
+        '<svg width="60" height="66" viewBox="0 0 20 22" fill="none">' +
+          '<path d="M4 2h12a2 2 0 0 1 2 2v16l-8-4-8 4V4a2 2 0 0 1 2-2z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>' +
+        '</svg>' +
+        '<svg width="66" height="66" viewBox="0 0 22 22" fill="none">' +
+          '<path d="M2 2h2l2.5 11h9l2-7H6.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<circle cx="9.5" cy="17.5" r="1.5" fill="white"/>' +
+          '<circle cx="15.5" cy="17.5" r="1.5" fill="white"/>' +
+        '</svg>' +
+      '</div>' +
+    '</div>';
+
   /* ══════════════════════════════════════════
      Multi-banner state
   ══════════════════════════════════════════ */
@@ -973,16 +1017,11 @@
       const gb = document.createElement('div'); gb.className = 'cv-grad-bottom'; mc.appendChild(gb);
     }
 
-    /* Layer 2: App Chrome (상태바 + 내비) */
+    /* Layer 2: App Chrome (상태바 + 내비) – 메인 캔버스와 동일한 SVG */
     if (b.gradOn) {
       const chrome = document.createElement('div');
       chrome.className = 'cv-chrome';
-      chrome.innerHTML =
-        '<div class="cv-status"><span class="cv-status-time">9:41</span><div class="cv-status-icons"></div></div>' +
-        '<div class="cv-nav"><div class="cv-nav-left">' +
-        '<span class="cv-nav-shop">쇼핑</span>' +
-        '<span class="cv-nav-brand">BinaryShōp</span>' +
-        '</div></div>';
+      chrome.innerHTML = MP_CHROME_HTML;
       mc.appendChild(chrome);
     }
 
@@ -1018,6 +1057,14 @@
       counter.className = 'cv-counter';
       counter.textContent = '01/12';
       mc.appendChild(counter);
+    }
+
+    /* Layer 4: 워터마크 (Photo by) */
+    if (b.wmOn) {
+      const wm = document.createElement('div');
+      wm.className = 'cv-photo-by';
+      wm.textContent = `Photo by. ${b.wmName || ''}`;
+      mc.appendChild(wm);
     }
 
     frame.appendChild(mc);
@@ -1303,6 +1350,7 @@
     } else {
       el.style.display = 'none';
     }
+    if (BANNERS.length > 0) updateActiveThumb();
   }
 
   function loadLogoSc(event) {
@@ -1338,6 +1386,7 @@
         el.style.display = 'block';
         applyLogoSc();
         document.getElementById('logo-guide-sc').classList.add('visible');
+        if (BANNERS.length > 0) updateActiveThumb();
       };
       tmpImg.src = logoScDataUrl;
     };
