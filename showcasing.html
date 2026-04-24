@@ -314,11 +314,28 @@
 
     /* ── Banner Navigation ── */
     .banner-nav {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; flex-direction: column; gap: 7px;
       padding: 8px 12px;
       background: var(--panel); border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    .bnav-row1 { display: flex; align-items: center; justify-content: space-between; }
+    .bnav-actions { display: flex; gap: 5px; }
+    .bnav-remove {
+      height: 26px; padding: 0 10px;
+      background: #F2F2F2; color: #C0C0C0; border: 1px solid #E2E2E2;
+      border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--ff);
+      cursor: pointer; white-space: nowrap;
+    }
+    .bnav-remove:hover { background: #E8E8E8; color: #999; }
+    .bnav-exp-cur {
+      width: 100%; height: 28px;
+      background: #fff; color: var(--black);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 11px; font-weight: 600; font-family: var(--ff);
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .bnav-exp-cur:hover { border-color: #888; }
     .bnav-arrows { display: flex; align-items: center; gap: 6px; }
     .bnav-btn {
       width: 26px; height: 26px;
@@ -421,12 +438,18 @@
 
     <!-- Banner Navigation -->
     <div class="banner-nav">
-      <div class="bnav-arrows">
-        <button class="bnav-btn" id="bnav-prev" onclick="prevBanner()">&#8249;</button>
-        <span class="bnav-count" id="bnav-count">1 / 1</span>
-        <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
+      <div class="bnav-row1">
+        <div class="bnav-arrows">
+          <button class="bnav-btn" id="bnav-prev" onclick="prevBanner()">&#8249;</button>
+          <span class="bnav-count" id="bnav-count">1 / 1</span>
+          <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
+        </div>
+        <div class="bnav-actions">
+          <button class="bnav-remove" id="bnav-remove" onclick="removeBanner()" style="display:none">- 제거</button>
+          <button class="bnav-add" id="bnav-add" onclick="addBanner()">+ 추가</button>
+        </div>
       </div>
-      <button class="bnav-add" id="bnav-add" onclick="addBanner()">+ 추가</button>
+      <button class="bnav-exp-cur" onclick="doExportCurrent()">현재 페이지 내보내기 (PNG)</button>
     </div>
 
     <div class="panel-scroll">
@@ -549,7 +572,7 @@
 
     <div class="action-bar">
       <button class="btn-exp-out" onclick="doReset()">새로고침</button>
-      <button class="btn-exp" onclick="doExport()">내보내기 (PNG)</button>
+      <button class="btn-exp" onclick="doExportAll()">한번에 내보내기</button>
     </div>
   </div>
 
@@ -892,6 +915,22 @@
     document.getElementById('bnav-prev').disabled = currentBanner === 0;
     document.getElementById('bnav-next').disabled = currentBanner >= BANNERS.length - 1;
     document.getElementById('bnav-add').disabled  = BANNERS.length >= 15;
+    /* - 제거 버튼: 배너 2개 이상일 때만 표시 */
+    const removeBtn = document.getElementById('bnav-remove');
+    if (removeBtn) removeBtn.style.display = BANNERS.length >= 2 ? '' : 'none';
+  }
+
+  function removeBanner() {
+    if (BANNERS.length <= 1) return;
+    BANNERS.splice(currentBanner, 1);
+    /* 마지막 배너를 지웠으면 앞으로 이동 */
+    if (currentBanner >= BANNERS.length) currentBanner = BANNERS.length - 1;
+    /* thumbPage 범위 보정 */
+    const maxPage = Math.max(0, Math.ceil(BANNERS.length / 5) - 1);
+    if (thumbPage > maxPage) thumbPage = maxPage;
+    loadBanner(currentBanner);
+    updateBannerNav();
+    renderThumbStrip();
   }
 
   function updateThumbPageNav() {
@@ -1321,59 +1360,63 @@
 
   function doReset() { location.reload(); }
 
-  /* ── Export – 네이티브 Canvas 2D로 직접 그리기 (화질 무손실) ── */
-  async function doExport() {
-    if (!imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
+  /* ── Export 공통 헬퍼: 배너 데이터 → Canvas 반환 ── */
+  async function renderBannerToCanvas(b) {
+    if (!b.imgs || !b.imgs['bg']) return null;
+    const out = document.createElement('canvas');
+    out.width = CW; out.height = CH;
+    const ctx = out.getContext('2d');
+
+    ctx.fillStyle = '#1A1A1A';
+    ctx.fillRect(0, 0, CW, CH);
+
+    const img = new Image();
+    img.src = b.imgs['bg'];
+    await new Promise(resolve => { img.onload = resolve; if (img.complete) resolve(); });
+    ctx.drawImage(img, b.bgX, b.bgY, b.bgW, b.bgH);
+
+    if (b.presetJyOn) {
+      const pImg = new Image();
+      pImg.src = PRESET_JY_SRC;
+      await new Promise(resolve => { pImg.onload = resolve; if (pImg.complete) resolve(); });
+      ctx.drawImage(pImg, PRESET_JY.x, PRESET_JY.y, PRESET_JY.w, PRESET_JY.h);
+    }
+
+    if (b.logoScDataUrl) {
+      const lImg = new Image();
+      lImg.src = b.logoScDataUrl;
+      await new Promise(resolve => { lImg.onload = resolve; if (lImg.complete) resolve(); });
+      ctx.drawImage(lImg, b.logoScX, b.logoScY, b.logoScW, b.logoScH);
+    }
+
+    if (b.wmOn) {
+      ctx.font         = '600 27px "Pretendard Variable", Pretendard, sans-serif';
+      ctx.fillStyle    = 'rgba(255,255,255,0.75)';
+      ctx.textAlign    = 'right';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(`Photo by. ${b.wmName || ''}`, CW - 60, CH - 48);
+    }
+
+    return out;
+  }
+
+  /* ── 현재 페이지 내보내기 ── */
+  async function doExportCurrent() {
+    saveBanner(currentBanner);
+    const b = BANNERS[currentBanner];
+    if (!b.imgs || !b.imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
 
     const prog = document.getElementById('exp-prog');
     prog.classList.add('show');
-
     try {
-      const out = document.createElement('canvas');
-      out.width  = CW;
-      out.height = CH;
-      const ctx  = out.getContext('2d');
-
-      /* 배경색 */
-      ctx.fillStyle = '#1A1A1A';
-      ctx.fillRect(0, 0, CW, CH);
-
-      /* 배경 이미지를 현재 위치/크기 그대로 그리기 */
-      const img = new Image();
-      img.src = imgs['bg'];
-      await new Promise(resolve => { img.onload = resolve; if (img.complete) resolve(); });
-      ctx.drawImage(img, bgX, bgY, bgW, bgH);
-
-      /* 집요한세일 프리셋 로고 */
-      if (document.getElementById('preset-jy-on').checked) {
-        const pImg = new Image();
-        pImg.src = PRESET_JY_SRC;
-        await new Promise(resolve => { pImg.onload = resolve; if (pImg.complete) resolve(); });
-        ctx.drawImage(pImg, PRESET_JY.x, PRESET_JY.y, PRESET_JY.w, PRESET_JY.h);
+      const canvas = await renderBannerToCanvas(b);
+      if (canvas) {
+        const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+        const link = document.createElement('a');
+        link.download = `showcasing_${currentBanner + 1}_${ts}.png`;
+        link.href     = canvas.toDataURL('image/png');
+        link.click();
       }
-      /* 커스텀 SVG 로고 (사용자 조정 위치/크기) */
-      if (logoScDataUrl) {
-        const lImg = new Image();
-        lImg.src = logoScDataUrl;
-        await new Promise(resolve => { lImg.onload = resolve; if (lImg.complete) resolve(); });
-        ctx.drawImage(lImg, logoScX, logoScY, logoScW, logoScH);
-      }
-
-      /* 유저명 표시 on이면 텍스트 추가 */
-      if (document.getElementById('f-wm-on').checked) {
-        const wmName = document.getElementById('f-wm-name')?.value || '';
-        ctx.font         = '600 27px "Pretendard Variable", Pretendard, sans-serif';
-        ctx.fillStyle    = 'rgba(255,255,255,0.75)';
-        ctx.textAlign    = 'right';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillText(`Photo by. ${wmName}`, CW - 60, CH - 48);
-      }
-
-      const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
-      const link = document.createElement('a');
-      link.download = `showcasing_${ts}.png`;
-      link.href     = out.toDataURL('image/png');
-      link.click();
     } catch (e) {
       if (e.name === 'SecurityError') {
         alert('URL로 삽입된 이미지는 보안 정책(CORS)으로 인해 PNG 내보내기가 제한됩니다.\n이미지를 파일로 직접 업로드 후 내보내기 해주세요.');
@@ -1381,7 +1424,41 @@
         alert('내보내기 오류: ' + e.message);
       }
     }
+    prog.classList.remove('show');
+  }
 
+  /* ── 한번에 내보내기: 배경 있는 모든 배너 순차 다운로드 ── */
+  async function doExportAll() {
+    saveBanner(currentBanner);
+    const exportable = BANNERS.filter(b => b.imgs && b.imgs['bg']);
+    if (exportable.length === 0) {
+      alert('배경 사진이 설정된 배너가 없습니다.');
+      return;
+    }
+
+    const prog = document.getElementById('exp-prog');
+    prog.classList.add('show');
+    const ts = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+    try {
+      for (let i = 0; i < BANNERS.length; i++) {
+        const b = BANNERS[i];
+        if (!b.imgs || !b.imgs['bg']) continue;
+        const canvas = await renderBannerToCanvas(b);
+        if (canvas) {
+          const link = document.createElement('a');
+          link.download = `showcasing_${i + 1}_${ts}.png`;
+          link.href     = canvas.toDataURL('image/png');
+          link.click();
+          if (i < BANNERS.length - 1) await sleep(300);
+        }
+      }
+    } catch (e) {
+      if (e.name === 'SecurityError') {
+        alert('URL로 삽입된 이미지는 보안 정책(CORS)으로 인해 PNG 내보내기가 제한됩니다.\n이미지를 파일로 직접 업로드 후 내보내기 해주세요.');
+      } else {
+        alert('내보내기 오류: ' + e.message);
+      }
+    }
     prog.classList.remove('show');
   }
 
