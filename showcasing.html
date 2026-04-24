@@ -355,8 +355,8 @@
     .bnav-add:hover:not(:disabled) { opacity: 0.8; }
     .bnav-add:disabled { opacity: 0.35; cursor: default; }
 
-    /* ── Thumbnail Strip ── */
-    .thumb-strip-wrap {
+    /* ── Mini Preview Strip ── */
+    .mp-strip-wrap {
       display: flex; flex-direction: column; align-items: center; gap: 8px;
       padding-top: 2px;
     }
@@ -374,39 +374,36 @@
       font-size: 11px; font-weight: 600; min-width: 36px; text-align: center;
       color: var(--gray4);
     }
-    .thumb-strip { display: flex; gap: 5px; }
-    .mini-thumb {
-      width: 70px; height: 105px;
-      border-radius: 6px; overflow: hidden;
-      border: 2px solid transparent;
-      cursor: pointer; position: relative;
-      background: var(--gray2);
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      flex-shrink: 0;
-      transition: border-color 0.15s;
+    .mp-row { display: flex; gap: 10px; align-items: flex-start; }
+    .mp-slot {
+      position: relative; cursor: pointer;
+      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 0 0 2.5px transparent;
+      flex-shrink: 0; transition: box-shadow 0.15s;
     }
-    .mini-thumb:hover { border-color: var(--gray3); }
-    .mini-thumb.active { border-color: #1b6ef3; }
-    .mini-thumb.empty { cursor: default; opacity: 0.4; pointer-events: none; }
-    .mt-grad {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0) 100%);
-      pointer-events: none;
+    .mp-slot.active { box-shadow: 0 0 0 2.5px #1b6ef3; }
+    .mp-slot.empty  { opacity: 0.3; cursor: default; pointer-events: none; }
+    .mp-slot:hover:not(.active):not(.empty) { box-shadow: 0 0 0 2.5px var(--gray3); }
+    /* mp-frame: clipping box — 1125×1686 scaled ×0.125 = 140.6×210.75 */
+    .mp-frame {
+      width: 140px; height: 210px;
+      overflow: hidden; position: relative;
+      background: #f4f4f4;
     }
-    .mt-title {
-      position: absolute; bottom: 11px; left: 5px; right: 5px;
-      font-size: 6.5px; font-weight: 400; color: #fff;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      pointer-events: none; line-height: 1.3;
+    /* mp-canvas mirrors the main #canvas structure at 1/8 scale */
+    .mp-canvas {
+      width: 1125px; height: 1686px;
+      position: relative; overflow: hidden;
+      background: #f4f4f4;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+      transform: scale(0.125); transform-origin: top left;
+      user-select: none; pointer-events: none;
     }
-    .mt-badge {
-      position: absolute; top: 4px; left: 4px;
-      background: rgba(0,0,0,0.55); color: #fff;
-      font-size: 8px; font-weight: 700;
-      padding: 1px 5px; border-radius: 4px;
-      pointer-events: none;
+    .mp-badge {
+      position: absolute; top: 5px; left: 5px; z-index: 10;
+      background: rgba(0,0,0,0.62); color: #fff;
+      font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; pointer-events: none;
     }
   </style>
 </head>
@@ -689,19 +686,19 @@
       <div class="preview-label">375 × 562px · 출력 1125 × 1686px</div>
       <div style="font-size:11px; color:var(--gray3); margin-top:-6px;">사진 이동 및 모서리 드래그로 확대 가능</div>
 
-      <!-- Thumbnail Strip -->
-      <div class="thumb-strip-wrap">
+      <!-- Mini Preview Strip -->
+      <div class="mp-strip-wrap">
         <div class="thumb-page-nav">
           <button class="tpnav-btn" id="tp-prev" onclick="prevThumbPage()">&#8249;</button>
           <span class="tpnav-count" id="tp-count">1 / 1</span>
           <button class="tpnav-btn" id="tp-next" onclick="nextThumbPage()">&#8250;</button>
         </div>
-        <div class="thumb-strip">
-          <div class="mini-thumb" id="mt-0" onclick="onThumbClick(0)"></div>
-          <div class="mini-thumb" id="mt-1" onclick="onThumbClick(1)"></div>
-          <div class="mini-thumb" id="mt-2" onclick="onThumbClick(2)"></div>
-          <div class="mini-thumb" id="mt-3" onclick="onThumbClick(3)"></div>
-          <div class="mini-thumb" id="mt-4" onclick="onThumbClick(4)"></div>
+        <div class="mp-row">
+          <div class="mp-slot" id="mt-0" onclick="onThumbClick(0)"></div>
+          <div class="mp-slot" id="mt-1" onclick="onThumbClick(1)"></div>
+          <div class="mp-slot" id="mt-2" onclick="onThumbClick(2)"></div>
+          <div class="mp-slot" id="mt-3" onclick="onThumbClick(3)"></div>
+          <div class="mp-slot" id="mt-4" onclick="onThumbClick(4)"></div>
         </div>
       </div>
     </div>
@@ -938,40 +935,97 @@
 
   function renderThumb(slotEl, bannerIdx) {
     slotEl.innerHTML = '';
-    slotEl.className = 'mini-thumb';
+    slotEl.className = 'mp-slot';
+
+    /* 빈 슬롯 */
     if (bannerIdx >= BANNERS.length) {
       slotEl.classList.add('empty');
-      slotEl.style.backgroundImage    = '';
-      slotEl.style.backgroundSize     = '';
-      slotEl.style.backgroundPosition = '';
+      const emptyFrame = document.createElement('div');
+      emptyFrame.className = 'mp-frame';
+      slotEl.appendChild(emptyFrame);
       return;
     }
+
     if (bannerIdx === currentBanner) slotEl.classList.add('active');
-    const b  = BANNERS[bannerIdx];
-    const TS = 70 / CW; /* mini-thumb scale: 70px / 1125px */
+
+    const b = BANNERS[bannerIdx];
+
+    /* ── mp-frame + mp-canvas: 기존 미리보기와 동일한 구조 (scale 1/8) ── */
+    const frame = document.createElement('div');
+    frame.className = 'mp-frame';
+
+    const mc = document.createElement('div');
+    mc.className = 'mp-canvas';
+
+    /* Layer 0: 배경 이미지 – 메인 캔버스와 동일한 좌표계 그대로 사용 */
+    const bg = document.createElement('div');
+    bg.className = 'cv-bg';
     if (b.imgs && b.imgs['bg']) {
-      slotEl.style.backgroundImage    = `url(${b.imgs['bg']})`;
-      slotEl.style.backgroundSize     = `${b.bgW * TS}px ${b.bgH * TS}px`;
-      slotEl.style.backgroundPosition = `${b.bgX * TS}px ${b.bgY * TS}px`;
-      slotEl.style.backgroundRepeat   = 'no-repeat';
-    } else {
-      slotEl.style.backgroundImage    = '';
-      slotEl.style.backgroundSize     = '';
-      slotEl.style.backgroundPosition = '';
+      bg.style.backgroundImage    = `url(${b.imgs['bg']})`;
+      bg.style.backgroundSize     = `${b.bgW}px ${b.bgH}px`;
+      bg.style.backgroundPosition = `${b.bgX}px ${b.bgY}px`;
     }
+    mc.appendChild(bg);
+
+    /* Layer 1: 그라데이션 */
     if (b.gradOn) {
-      const grad = document.createElement('div');
-      grad.className = 'mt-grad';
-      slotEl.appendChild(grad);
+      const gt = document.createElement('div'); gt.className = 'cv-grad-top';    mc.appendChild(gt);
+      const gb = document.createElement('div'); gb.className = 'cv-grad-bottom'; mc.appendChild(gb);
     }
-    if (b.gradOn && b.title) {
-      const txt = document.createElement('div');
-      txt.className = 'mt-title';
-      txt.textContent = b.title;
-      slotEl.appendChild(txt);
+
+    /* Layer 2: App Chrome (상태바 + 내비) */
+    if (b.gradOn) {
+      const chrome = document.createElement('div');
+      chrome.className = 'cv-chrome';
+      chrome.innerHTML =
+        '<div class="cv-status"><span class="cv-status-time">9:41</span><div class="cv-status-icons"></div></div>' +
+        '<div class="cv-nav"><div class="cv-nav-left">' +
+        '<span class="cv-nav-shop">쇼핑</span>' +
+        '<span class="cv-nav-brand">BinaryShōp</span>' +
+        '</div></div>';
+      mc.appendChild(chrome);
     }
+
+    /* Layer 2-a: 집요한세일 프리셋 로고 */
+    if (b.presetJyOn) {
+      const pEl = document.createElement('div');
+      pEl.className = 'cv-logo-preset';
+      pEl.style.cssText = `display:block;left:${PRESET_JY.x}px;top:${PRESET_JY.y}px;width:${PRESET_JY.w}px;height:${PRESET_JY.h}px;`;
+      const pImg = document.createElement('img'); pImg.src = PRESET_JY_SRC;
+      pEl.appendChild(pImg); mc.appendChild(pEl);
+    }
+
+    /* Layer 2-b: 커스텀 SVG 로고 */
+    if (b.logoScDataUrl) {
+      const lEl = document.createElement('div');
+      lEl.className = 'cv-logo-preset';
+      lEl.style.cssText = `display:block;left:${b.logoScX}px;top:${b.logoScY}px;width:${b.logoScW}px;height:${b.logoScH}px;`;
+      const lImg = document.createElement('img'); lImg.src = b.logoScDataUrl;
+      lEl.appendChild(lImg); mc.appendChild(lEl);
+    }
+
+    /* Layer 3: 텍스트 콘텐츠 */
+    if (b.gradOn) {
+      const content = document.createElement('div');
+      content.className = 'cv-content';
+      content.innerHTML =
+        `<div class="cv-category">${b.category || ''}</div>` +
+        `<div class="cv-title">${b.title || ''}</div>` +
+        `<div class="cv-subtitle">${b.subtitle || ''}</div>`;
+      mc.appendChild(content);
+
+      const counter = document.createElement('div');
+      counter.className = 'cv-counter';
+      counter.textContent = '01/12';
+      mc.appendChild(counter);
+    }
+
+    frame.appendChild(mc);
+    slotEl.appendChild(frame);
+
+    /* 배너 번호 뱃지 */
     const badge = document.createElement('div');
-    badge.className = 'mt-badge';
+    badge.className = 'mp-badge';
     badge.textContent = bannerIdx + 1;
     slotEl.appendChild(badge);
   }
