@@ -354,18 +354,22 @@
       background: var(--panel); border-top: 1px solid var(--border);
     }
     .action-row { display: flex; gap: 8px; }
-    /* full-width top button: override flex:1 (column context would stretch height) */
-    .action-bar > .btn-exp-out { flex: none; width: 100%; }
-    /* 프로젝트 저장/불러오기 버튼 */
+    /* 한번에 내보내기: full-width (action-bar 직속 btn-exp) */
+    .action-bar > .btn-exp { flex: none; width: 100%; }
+    /* 프로젝트 저장/불러오기 버튼 — 흰색 + 라인 */
     .btn-proj-load, .btn-proj-save {
-      flex: 1; height: 36px; border: none; border-radius: var(--radius);
+      flex: 1; height: 36px;
+      background: #fff; color: var(--black);
+      border: 1px solid var(--border); border-radius: var(--radius);
       font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: opacity 0.15s;
+      transition: border-color 0.15s;
     }
-    .btn-proj-load { background: #3A3A3A; color: #fff; }
-    .btn-proj-save { background: #111; color: #fff; }
-    .btn-proj-load:hover, .btn-proj-save:hover { opacity: 0.8; }
+    .btn-proj-load:hover, .btn-proj-save:hover { border-color: #888; }
+    /* 섹션 구분선 */
+    .action-divider {
+      border: none; border-top: 1px solid var(--border); margin: 0 -12px;
+    }
     .bnav-arrows { display: flex; align-items: center; gap: 6px; }
     .bnav-btn {
       width: 26px; height: 26px;
@@ -624,6 +628,7 @@
     </div><!-- /panel-scroll -->
 
     <div class="action-bar">
+      <!-- 프로젝트 저장 / 불러오기 -->
       <div class="action-row">
         <button class="btn-proj-load" onclick="document.getElementById('proj-file-input').click()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -642,11 +647,15 @@
         </button>
         <input type="file" id="proj-file-input" accept=".json" style="display:none" onchange="loadProject(event)">
       </div>
-      <button class="btn-exp-out" onclick="doExportCurrent()">현재 페이지 내보내기 (PNG)</button>
+
+      <hr class="action-divider">
+
+      <!-- 내보내기 -->
       <div class="action-row">
         <button class="btn-exp-out" onclick="doReset()">새로고침</button>
-        <button class="btn-exp" onclick="doExportAll()">한번에 내보내기 (PNG)</button>
+        <button class="btn-exp" onclick="doExportCurrent()">페이지 내보내기 (PNG)</button>
       </div>
+      <button class="btn-exp" onclick="doExportAll()">한번에 내보내기 (PNG)</button>
     </div>
   </div>
 
