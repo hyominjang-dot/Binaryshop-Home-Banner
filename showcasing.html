@@ -51,8 +51,32 @@
     /* ── Left Panel ── */
     .panel {
       background: var(--panel); border-right: 1px solid var(--border);
-      display: grid; grid-template-rows: auto auto 1fr auto; overflow: hidden;
+      display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
     }
+
+    /* ── Restore Banner ── */
+    .restore-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 14px; flex-shrink: 0;
+      background: #EDF3FF; border-bottom: 1px solid #C5D6FF;
+    }
+    .restore-banner-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .restore-banner-icon { color: #2D62E8; flex-shrink: 0; }
+    .restore-banner-title { font-size: 12.5px; font-weight: 700; color: var(--black); white-space: nowrap; }
+    .restore-banner-sub   { font-size: 11px; color: #2D62E8; margin-top: 2px; }
+    .restore-banner-btns  { display: flex; gap: 6px; flex-shrink: 0; }
+    .restore-btn-continue {
+      height: 30px; padding: 0 12px;
+      background: #1b6ef3; color: #fff; border: none; border-radius: 7px;
+      font-size: 12px; font-weight: 700; font-family: var(--ff); cursor: pointer; white-space: nowrap;
+    }
+    .restore-btn-continue:hover { background: #155fda; }
+    .restore-btn-new {
+      height: 30px; padding: 0 12px;
+      background: #fff; color: var(--gray4); border: 1px solid var(--border); border-radius: 7px;
+      font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer; white-space: nowrap;
+    }
+    .restore-btn-new:hover { background: var(--gray1); }
     .panel-scroll { overflow-y: auto; padding: 16px 0 0; }
 
     /* ── Tab bar ── */
@@ -332,6 +356,16 @@
     .action-row { display: flex; gap: 8px; }
     /* full-width top button: override flex:1 (column context would stretch height) */
     .action-bar > .btn-exp-out { flex: none; width: 100%; }
+    /* 프로젝트 저장/불러오기 버튼 */
+    .btn-proj-load, .btn-proj-save {
+      flex: 1; height: 36px; border: none; border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .btn-proj-load { background: #3A3A3A; color: #fff; }
+    .btn-proj-save { background: #111; color: #fff; }
+    .btn-proj-load:hover, .btn-proj-save:hover { opacity: 0.8; }
     .bnav-arrows { display: flex; align-items: center; gap: 6px; }
     .bnav-btn {
       width: 26px; height: 26px;
@@ -435,6 +469,27 @@
       <a class="tab-item active" href="showcasing.html">Showcasing</a>
       <a class="tab-item" href="brand.html">Featured Brand</a>
       <a class="tab-item" href="magazine.html">Binary Magazine</a>
+    </div>
+
+    <!-- 이전 작업 복구 배너 (localStorage 감지 시 표시) -->
+    <div class="restore-banner" id="restore-banner" style="display:none">
+      <div class="restore-banner-info">
+        <svg class="restore-banner-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect x="3" y="2" width="13" height="16" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6 2v-1h6v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M6 8h7M6 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <rect x="12" y="13" width="8" height="7" rx="1.5" fill="#EDF3FF" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M14.5 16.5h3M16 15v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <p class="restore-banner-title">이전 작업이 저장돼 있어요</p>
+          <p class="restore-banner-sub" id="restore-banner-sub">이어서 작업하시겠어요?</p>
+        </div>
+      </div>
+      <div class="restore-banner-btns">
+        <button class="restore-btn-continue" onclick="doRestoreContinue()">이어하기 →</button>
+        <button class="restore-btn-new" onclick="doRestoreDismiss()">새로 쓰기</button>
+      </div>
     </div>
 
     <!-- Banner Navigation -->
@@ -569,6 +624,24 @@
     </div><!-- /panel-scroll -->
 
     <div class="action-bar">
+      <div class="action-row">
+        <button class="btn-proj-load" onclick="document.getElementById('proj-file-input').click()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 10v2.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          불러오기
+        </button>
+        <button class="btn-proj-save" onclick="saveProject()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="3.5" y="1" width="5" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="3" y="7.5" width="8" height="4.5" rx="0.8" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+          프로젝트 저장
+        </button>
+        <input type="file" id="proj-file-input" accept=".json" style="display:none" onchange="loadProject(event)">
+      </div>
       <button class="btn-exp-out" onclick="doExportCurrent()">현재 페이지 내보내기 (PNG)</button>
       <div class="action-row">
         <button class="btn-exp-out" onclick="doReset()">새로고침</button>
@@ -1161,11 +1234,24 @@
 
   /* ──────────────── */
   window.onload = () => {
+    /* 기본 상태: 빈 배너 1개로 시작 */
     BANNERS.push(createBanner());
     updateBannerNav();
     renderThumbStrip();
     rp();
     initInteraction();
+
+    /* localStorage에 이전 작업이 있으면 복구 배너 표시 */
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state && Array.isArray(state.banners) && state.banners.length > 0) {
+          _pendingRestoreState = state;
+          showRestoreBanner(state);
+        }
+      }
+    } catch { /* 파싱 오류 등 무시 */ }
   };
 
   function toggleSec(hd) {
@@ -1519,6 +1605,9 @@
 
     /* update active thumbnail to reflect current state */
     if (BANNERS.length > 0) updateActiveThumb();
+
+    /* localStorage 자동저장 (텍스트만, 디바운스) */
+    lsAutoSave();
   }
 
   function doReset() { location.reload(); }
@@ -1626,6 +1715,114 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* ══════════════════════════════════════════
+     프로젝트 저장 / 불러오기 & localStorage 자동저장
+  ══════════════════════════════════════════ */
+  const LS_KEY = 'binaryshop-showcasing-autosave-v1';
+  let _lsSaveTimer = null;
+  let _pendingRestoreState = null;
+
+  /* 전체 상태 수집. withImages:false → base64 이미지 제외 (localStorage용) */
+  function collectState(opts = {}) {
+    saveBanner(currentBanner); /* 현재 편집 중인 배너를 BANNERS에 동기화 */
+    const withImages = opts.withImages !== false;
+    const banners = BANNERS.map(b => {
+      const copy = Object.assign({}, b, { imgs: Object.assign({}, b.imgs) });
+      if (!withImages) {
+        copy.imgs = {};
+        copy.logoScDataUrl = null;
+        copy.ubBgSrc = '';
+        copy.ubBgHasImg = false;
+        copy.ubLogoSrc = '';
+        copy.ubLogoHasImg = false;
+      }
+      return copy;
+    });
+    return { version: 1, savedAt: new Date().toISOString(), currentBanner, thumbPage, banners };
+  }
+
+  /* 상태 복원 */
+  async function applyState(state) {
+    if (!state || !Array.isArray(state.banners) || state.banners.length === 0) return;
+    BANNERS.length = 0;
+    state.banners.forEach(b => BANNERS.push(Object.assign(createBanner(), b)));
+    currentBanner = Math.max(0, Math.min(state.currentBanner || 0, BANNERS.length - 1));
+    thumbPage     = Math.max(0, Math.min(state.thumbPage || 0, Math.max(0, Math.ceil(BANNERS.length / 5) - 1)));
+    loadBanner(currentBanner);
+    updateBannerNav();
+    renderThumbStrip();
+  }
+
+  /* JSON 프로젝트 파일 다운로드 (이미지 포함) */
+  function saveProject() {
+    const state = collectState({ withImages: true });
+    const blob  = new Blob([JSON.stringify(state)], { type: 'application/json' });
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
+    const ts    = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    a.download  = `${ts}_binaryshop-showcasing.json`;
+    a.href = url; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* JSON 파일 불러오기 */
+  function loadProject(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = async ev => {
+      try {
+        const state = JSON.parse(ev.target.result);
+        await applyState(state);
+        hideRestoreBanner(); /* 복구 배너가 떠 있다면 닫기 */
+      } catch {
+        alert('파일을 불러오는 데 실패했습니다.\n올바른 프로젝트 파일인지 확인해주세요.');
+      }
+    };
+    r.readAsText(file);
+    e.target.value = ''; /* 같은 파일 재선택 가능하게 */
+  }
+
+  /* localStorage 자동저장 (텍스트만, 디바운스 600ms) */
+  function lsAutoSave() {
+    clearTimeout(_lsSaveTimer);
+    _lsSaveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: false })));
+      } catch { /* 용량 초과 등 무시 */ }
+    }, 600);
+  }
+
+  /* 복구 배너 표시 */
+  function showRestoreBanner(state) {
+    const el = document.getElementById('restore-banner');
+    if (!el) return;
+    const count = state.banners?.length || 1;
+    const d = new Date(state.savedAt);
+    const label = `배너 ${count}개 · ${d.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 저장`;
+    const sub = document.getElementById('restore-banner-sub');
+    if (sub) sub.textContent = label;
+    el.style.display = '';
+  }
+
+  function hideRestoreBanner() {
+    const el = document.getElementById('restore-banner');
+    if (el) el.style.display = 'none';
+    _pendingRestoreState = null;
+  }
+
+  /* 이어하기 버튼 */
+  function doRestoreContinue() {
+    if (_pendingRestoreState) applyState(_pendingRestoreState);
+    hideRestoreBanner();
+  }
+
+  /* 새로 쓰기 버튼 */
+  function doRestoreDismiss() {
+    localStorage.removeItem(LS_KEY);
+    hideRestoreBanner();
+  }
 </script>
 </body>
 </html>
