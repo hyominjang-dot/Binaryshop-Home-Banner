@@ -1251,7 +1251,7 @@
   }
 
   /* ──────────────── */
-  window.onload = () => {
+  window.onload = async () => {
     /* 기본 상태: 빈 배너 1개로 시작 */
     BANNERS.push(createBanner());
     updateBannerNav();
@@ -1259,17 +1259,20 @@
     rp();
     initInteraction();
 
-    /* localStorage에 이전 작업이 있으면 복구 배너 표시 */
+    /* IndexedDB에 이전 작업이 있으면 복구 배너 표시
+       localStorage 메타로 빠르게 존재 여부 확인 후 IDB에서 전체 상태(이미지 포함) 로드 */
     try {
-      const saved = localStorage.getItem(LS_KEY);
-      if (saved) {
-        const state = JSON.parse(saved);
+      const meta = JSON.parse(localStorage.getItem(LS_META) || 'null');
+      if (meta && meta.savedAt) {
+        const state = await _idbGet();
         if (state && Array.isArray(state.banners) && state.banners.length > 0) {
           _pendingRestoreState = state;
           showRestoreBanner(state);
         }
       }
-    } catch { /* 파싱 오류 등 무시 */ }
+    } catch (e) {
+      console.warn('[autosave] load failed:', e);
+    }
   };
 
   function toggleSec(hd) {
@@ -1735,11 +1738,52 @@
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   /* ══════════════════════════════════════════
-     프로젝트 저장 / 불러오기 & localStorage 자동저장
+     프로젝트 저장 / 불러오기 & 자동저장 (IndexedDB)
+     localStorage(5~10MB)는 이미지 포함 시 QuotaExceededError 발생 →
+     IndexedDB(용량 제한 없음)로 교체해 이미지까지 완전 복원
   ══════════════════════════════════════════ */
-  const LS_KEY = 'binaryshop-showcasing-autosave-v1';
-  let _lsSaveTimer = null;
+  const IDB_NAME  = 'binaryshop-showcasing';
+  const IDB_STORE = 'autosave';
+  const IDB_KEY   = 'state-v1';
+  const LS_META   = 'binaryshop-showcasing-meta-v1'; /* localStorage: 감지용 메타만 */
+
+  let _autoSaveTimer = null;
   let _pendingRestoreState = null;
+
+  /* ── IndexedDB 헬퍼 ── */
+  function _openIDB() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(IDB_NAME, 1);
+      r.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+      r.onsuccess = e => res(e.target.result);
+      r.onerror   = e => rej(e.target.error);
+    });
+  }
+  async function _idbPut(val) {
+    const db = await _openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(val, IDB_KEY);
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  }
+  async function _idbGet() {
+    const db = await _openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const r  = tx.objectStore(IDB_STORE).get(IDB_KEY);
+      r.onsuccess = e => res(e.target.result ?? null);
+      r.onerror   = e => rej(e.target.error);
+    });
+  }
+  async function _idbDel() {
+    const db = await _openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_KEY);
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  }
 
   /* 전체 상태 수집. withImages:false → base64 이미지 제외 (localStorage용) */
   function collectState(opts = {}) {
@@ -1802,17 +1846,19 @@
     e.target.value = ''; /* 같은 파일 재선택 가능하게 */
   }
 
-  /* localStorage 자동저장 (디바운스 600ms)
-     이미지 포함으로 먼저 시도 → 용량 초과(QuotaExceededError) 시 이미지 제외로 재시도 */
+  /* 자동저장 — IndexedDB에 이미지 포함 전체 상태 저장 (디바운스 600ms)
+     localStorage에는 감지용 메타데이터만 기록 (savedAt + 배너 수) */
   function lsAutoSave() {
-    clearTimeout(_lsSaveTimer);
-    _lsSaveTimer = setTimeout(() => {
+    clearTimeout(_autoSaveTimer);
+    _autoSaveTimer = setTimeout(async () => {
       try {
-        localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: true })));
-      } catch {
-        try {
-          localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: false })));
-        } catch { /* 완전 실패 — 무시 */ }
+        const state = collectState({ withImages: true });
+        await _idbPut(state);
+        localStorage.setItem(LS_META, JSON.stringify({
+          savedAt: state.savedAt, count: state.banners.length
+        }));
+      } catch (e) {
+        console.warn('[autosave] failed:', e);
       }
     }, 600);
   }
@@ -1843,7 +1889,8 @@
 
   /* 새로 쓰기 버튼 */
   function doRestoreDismiss() {
-    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_META);
+    _idbDel().catch(() => {});
     hideRestoreBanner();
   }
 </script>
