@@ -486,7 +486,7 @@
           <path d="M14.5 16.5h3M16 15v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         </svg>
         <div>
-          <p class="restore-banner-title">이전 작업이 저장돼 있어요</p>
+          <p class="restore-banner-title">이전 작업 저장 기록이 있어요</p>
           <p class="restore-banner-sub" id="restore-banner-sub">이어서 작업하시겠어요?</p>
         </div>
       </div>
@@ -951,16 +951,25 @@
     document.getElementById('preset-jy-on').checked = b.presetJyOn;
     document.getElementById('f-wm-on').checked      = b.wmOn;
     document.getElementById('f-wm-name').value      = b.wmName;
-    /* restore upload box visuals */
+    /* restore upload box visuals
+       ubBgSrc / ubLogoSrc 가 없는 경우(이미지 포함 저장 전 구 데이터 호환)
+       imgs['bg'] / logoScDataUrl 에서 파생해 복원 */
     const ubBg = document.getElementById('ub-bg');
     if (ubBg) {
-      ubBg.style.backgroundImage = b.ubBgSrc || '';
-      b.ubBgHasImg ? ubBg.classList.add('has-img') : ubBg.classList.remove('has-img');
+      const bgSrc = b.ubBgSrc || (b.imgs && b.imgs['bg'] ? `url(${b.imgs['bg']})` : '');
+      ubBg.style.backgroundImage    = bgSrc;
+      ubBg.style.backgroundSize     = 'cover';
+      ubBg.style.backgroundPosition = 'center';
+      (b.ubBgHasImg || !!(b.imgs && b.imgs['bg'])) ? ubBg.classList.add('has-img') : ubBg.classList.remove('has-img');
     }
     const ubLogo = document.getElementById('ub-logo-sc');
     if (ubLogo) {
-      ubLogo.style.backgroundImage = b.ubLogoSrc || '';
-      b.ubLogoHasImg ? ubLogo.classList.add('has-img') : ubLogo.classList.remove('has-img');
+      const logoSrc = b.ubLogoSrc || (b.logoScDataUrl ? `url(${b.logoScDataUrl})` : '');
+      ubLogo.style.backgroundImage    = logoSrc;
+      ubLogo.style.backgroundSize     = 'contain';
+      ubLogo.style.backgroundPosition = 'center';
+      ubLogo.style.backgroundRepeat   = 'no-repeat';
+      (b.ubLogoHasImg || !!b.logoScDataUrl) ? ubLogo.classList.add('has-img') : ubLogo.classList.remove('has-img');
     }
     /* canvas has-img */
     const canvasEl = document.getElementById('canvas');
@@ -1793,13 +1802,18 @@
     e.target.value = ''; /* 같은 파일 재선택 가능하게 */
   }
 
-  /* localStorage 자동저장 (텍스트만, 디바운스 600ms) */
+  /* localStorage 자동저장 (디바운스 600ms)
+     이미지 포함으로 먼저 시도 → 용량 초과(QuotaExceededError) 시 이미지 제외로 재시도 */
   function lsAutoSave() {
     clearTimeout(_lsSaveTimer);
     _lsSaveTimer = setTimeout(() => {
       try {
-        localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: false })));
-      } catch { /* 용량 초과 등 무시 */ }
+        localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: true })));
+      } catch {
+        try {
+          localStorage.setItem(LS_KEY, JSON.stringify(collectState({ withImages: false })));
+        } catch { /* 완전 실패 — 무시 */ }
+      }
     }, 600);
   }
 
