@@ -254,25 +254,31 @@
     .cv-nav-brand { font-size: 51px; font-weight: 700; letter-spacing: -1.2px; }
     .cv-nav-right { display: flex; align-items: center; gap: 54px; }
 
-    /* Bottom content */
+    /* Bottom content
+       Figma 기준 (1x→3x):
+         text group bottom = 24px(1x) = 72px(3x) from frame bottom
+         padding-left  = 24px(1x) = 72px(3x)
+    */
     .cv-content {
       position: absolute; bottom: 0; left: 0; right: 0;
-      z-index: 3; pointer-events: none; padding: 0 72px 168px;
+      z-index: 3; pointer-events: none; padding: 0 72px 72px;
     }
     .cv-category { font-size: 45px; font-weight: 600; color: #fff; margin-bottom: 12px; line-height: 63px; }
     .cv-title    { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; word-break: keep-all; }
     .cv-subtitle { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; }
+    /* counter: Figma 25px(1x)=75px(3x) from bottom, 20px(1x)=60px(3x) from right */
     .cv-counter  {
-      position: absolute; bottom: 69px; right: 60px;
+      position: absolute; bottom: 75px; right: 60px;
       background: rgba(0,0,0,0.75); color: #fff;
       font-size: 36px; font-weight: 500; padding: 12px 24px;
       border-radius: 90px; letter-spacing: -0.9px; line-height: 48px;
       white-space: nowrap; z-index: 3; pointer-events: none;
     }
+    /* watermark: Figma 5px(1x)=15px(3x) from bottom & right */
     .cv-photo-by {
-      position: absolute; bottom: 48px; right: 60px;
+      position: absolute; bottom: 15px; right: 15px;
       font-size: 27px; font-weight: 600; color: rgba(255,255,255,0.75);
-      z-index: 1; pointer-events: none;
+      z-index: 3; pointer-events: none;
     }
 
     /* ── 모서리 리사이즈 핸들 (투명, 기능만 유지) ── */
