@@ -1669,11 +1669,12 @@
     }
 
     if (b.wmOn) {
+      /* Figma 기준: 우측 5px(1x)=15px(3x), 하단 5px(1x)=15px(3x) */
       ctx.font         = '600 27px "Pretendard Variable", Pretendard, sans-serif';
       ctx.fillStyle    = 'rgba(255,255,255,0.75)';
       ctx.textAlign    = 'right';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(`Photo by. ${b.wmName || ''}`, CW - 60, CH - 48);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`Photo by. ${b.wmName || ''}`, CW - 15, CH - 15);
     }
 
     return out;
@@ -1690,9 +1691,8 @@
     try {
       const canvas = await renderBannerToCanvas(b);
       if (canvas) {
-        const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
         const link = document.createElement('a');
-        link.download = `showcasing_${currentBanner + 1}_${ts}.png`;
+        link.download = `Showcasing_${currentBanner + 1}.png`;
         link.href     = canvas.toDataURL('image/png');
         link.click();
       }
@@ -1717,7 +1717,6 @@
 
     const prog = document.getElementById('exp-prog');
     prog.classList.add('show');
-    const ts = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
     try {
       for (let i = 0; i < BANNERS.length; i++) {
         const b = BANNERS[i];
@@ -1725,7 +1724,7 @@
         const canvas = await renderBannerToCanvas(b);
         if (canvas) {
           const link = document.createElement('a');
-          link.download = `showcasing_${i + 1}_${ts}.png`;
+          link.download = `Showcasing_${i + 1}.png`;
           link.href     = canvas.toDataURL('image/png');
           link.click();
           if (i < BANNERS.length - 1) await sleep(300);
