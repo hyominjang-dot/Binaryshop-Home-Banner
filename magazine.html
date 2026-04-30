@@ -1116,9 +1116,8 @@
         ctx.fillText(`Photo by. ${wmName}`, CW - 15, CH - 15);
       }
 
-      const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
       const link = document.createElement('a');
-      link.download = `binary_magazine_${ts}.png`;
+      link.download = `binary magazine_1.png`;
       link.href     = out.toDataURL('image/png');
       link.click();
     } catch (e) {

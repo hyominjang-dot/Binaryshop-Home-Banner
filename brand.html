@@ -858,9 +858,8 @@
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
       ctx.fillRect(0, 0, CW, CH);
 
-      const ts   = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
       const link = document.createElement('a');
-      link.download = `featured_brand_${ts}.png`;
+      link.download = `featured brand_1.png`;
       link.href     = out.toDataURL('image/png');
       link.click();
     } catch (e) {
