@@ -136,9 +136,11 @@
 
     /* Action bar */
     .action-bar {
-      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      display: flex; flex-direction: column;
+      padding: 8px 12px; gap: 12px;
       background: var(--panel); border-top: 1px solid var(--border);
     }
+    .action-row { display: flex; gap: 8px; }
     .btn-exp {
       flex: 1; height: 36px; background: var(--black); color: #fff; border: none;
       border-radius: var(--radius); font-size: 12px; font-weight: 600; font-family: var(--ff);
@@ -152,6 +154,38 @@
       cursor: pointer; transition: border-color 0.15s;
     }
     .btn-exp-out:hover { border-color: #888; }
+    /* 섹션 구분선 */
+    .action-divider {
+      border: none; border-top: 1px solid var(--border); margin: 0 -12px;
+    }
+    /* URL 생성 섹션 */
+    .url-gen-section { display: flex; flex-direction: column; gap: 8px; }
+    .btn-url-gen {
+      width: 100%; height: 36px;
+      background: #fff; color: var(--black);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: border-color 0.15s;
+    }
+    .btn-url-gen:hover:not(:disabled) { border-color: #888; }
+    .btn-url-gen:disabled { opacity: 0.5; cursor: wait; }
+    .url-result { display: none; gap: 6px; align-items: stretch; }
+    .url-result.show { display: flex; }
+    .url-input {
+      flex: 1; height: 36px; min-width: 0;
+      padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 10.5px; font-family: var(--ff); color: var(--gray4);
+      background: #F9F9F9; outline: none;
+    }
+    .btn-url-copy {
+      height: 36px; padding: 0 14px; flex-shrink: 0;
+      background: var(--black); color: #fff; border: none;
+      border-radius: var(--radius); font-size: 12px; font-weight: 600;
+      font-family: var(--ff); cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-url-copy.copied { background: #22a55b; }
 
     /* ── Right Preview Area ── */
     .preview-area {
@@ -447,8 +481,24 @@
     </div><!-- /panel-scroll -->
 
     <div class="action-bar">
-      <button class="btn-exp-out" onclick="doReset()">새로고침</button>
-      <button class="btn-exp" onclick="doExport()">내보내기 (PNG)</button>
+      <div class="action-row">
+        <button class="btn-exp-out" onclick="doReset()">새로고침</button>
+        <button class="btn-exp" onclick="doExport()">내보내기 (PNG)</button>
+      </div>
+      <hr class="action-divider">
+      <div class="url-gen-section">
+        <button class="btn-url-gen" id="btn-url-gen" onclick="doGenUrl()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M5.5 8a3 3 0 0 0 4.24.24l1.5-1.5A3 3 0 0 0 7 2.5l-.86.85" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M8.5 6a3 3 0 0 0-4.24-.24l-1.5 1.5A3 3 0 0 0 7 11.5l.85-.85" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          현재 페이지 URL 생성
+        </button>
+        <div class="url-result" id="url-result">
+          <input type="text" class="url-input" id="url-input" readonly placeholder="생성 버튼을 누르면 URL이 표시됩니다">
+          <button class="btn-url-copy" id="btn-url-copy" onclick="doCopyUrl()">복사</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -926,6 +976,92 @@
   }
 
   function doReset() { location.reload(); }
+
+  /* URL 생성 */
+  let _genBlobUrl = null;
+
+  async function doGenUrl() {
+    if (!imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
+    const btn = document.getElementById('btn-url-gen');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = '생성 중...';
+    try {
+      const out = document.createElement('canvas');
+      out.width = CW; out.height = CH;
+      const ctx = out.getContext('2d');
+
+      ctx.fillStyle = '#f4f4f4';
+      ctx.fillRect(0, 0, CW, CH);
+
+      const bgImg = new Image();
+      bgImg.src = imgs['bg'];
+      await new Promise(resolve => { bgImg.onload = resolve; if (bgImg.complete) resolve(); });
+      ctx.drawImage(bgImg, bgX, bgY, bgW, bgH);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(0, 0, CW, CH);
+
+      const heOn = document.getElementById('preset-he-on').checked;
+      const blOn = document.getElementById('preset-bl-on').checked;
+      if (heOn || blOn) {
+        const pSrc = heOn ? PRESET_HE_SRC : PRESET_BL_SRC;
+        const p    = heOn ? PRESET_HE     : PRESET_BL;
+        const pImg = new Image();
+        pImg.src = pSrc;
+        await new Promise(resolve => { pImg.onload = resolve; if (pImg.complete) resolve(); });
+        ctx.drawImage(pImg, p.x, p.y, p.w, p.h);
+      } else if (logoDataUrl) {
+        const logoImg = new Image();
+        logoImg.src = logoDataUrl;
+        await new Promise(resolve => { logoImg.onload = resolve; if (logoImg.complete) resolve(); });
+        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+      }
+
+      if (document.getElementById('f-wm-on').checked) {
+        const wmName = document.getElementById('f-wm-name')?.value || '';
+        ctx.font = '600 27px "Pretendard Variable", Pretendard, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.letterSpacing = '0px';
+        ctx.fillText(`Photo by. ${wmName}`, CW - 15, CH - 15);
+      }
+
+      if (_genBlobUrl) { URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
+      const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+      _genBlobUrl = URL.createObjectURL(blob);
+      const input = document.getElementById('url-input');
+      input.value = _genBlobUrl;
+      document.getElementById('url-result').classList.add('show');
+      input.select();
+    } catch (e) {
+      if (e.name === 'SecurityError') {
+        alert('URL로 삽입된 이미지는 CORS 제한으로 인해 URL 생성이 불가합니다.\n이미지를 파일로 직접 업로드해주세요.');
+      } else {
+        alert('URL 생성 오류: ' + e.message);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+
+  async function doCopyUrl() {
+    const input = document.getElementById('url-input');
+    if (!input.value) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch {
+      input.select();
+      document.execCommand('copy');
+    }
+    const btn = document.getElementById('btn-url-copy');
+    const orig = btn.textContent;
+    btn.textContent = '복사됨!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  }
 
   /* ── Export – Canvas 2D, 3x (828×546) ── */
   async function doExport() {
