@@ -824,6 +824,21 @@
   async function doExport() {
     if (!imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
 
+    const filename = 'featured brand_1.png';
+
+    /* 저장 위치 선택 (유저 제스처 컨텍스트 내에서 먼저 호출) */
+    let fileHandle = null;
+    if (window.showSaveFilePicker) {
+      try {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PNG 이미지', accept: { 'image/png': ['.png'] } }]
+        });
+      } catch (e) {
+        if (e.name === 'AbortError') return; /* 취소 */
+      }
+    }
+
     const prog = document.getElementById('exp-prog');
     prog.classList.add('show');
 
@@ -858,10 +873,17 @@
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
       ctx.fillRect(0, 0, CW, CH);
 
-      const link = document.createElement('a');
-      link.download = `featured brand_1.png`;
-      link.href     = out.toDataURL('image/png');
-      link.click();
+      const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+      if (fileHandle) {
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob); await writable.close();
+      } else {
+        /* fallback */
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename; link.href = url; link.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (e) {
       if (e.name === 'SecurityError') {
         alert('URL로 삽입된 이미지는 보안 정책(CORS)으로 인해 PNG 내보내기가 제한됩니다.\n이미지를 파일로 직접 업로드 후 내보내기 해주세요.');

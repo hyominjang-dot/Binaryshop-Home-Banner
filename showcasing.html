@@ -1731,15 +1731,36 @@
     const b = BANNERS[currentBanner];
     if (!b.imgs || !b.imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
 
+    const filename = `Showcasing_${currentBanner + 1}.png`;
+
+    /* 저장 위치 선택 (유저 제스처 컨텍스트 내에서 먼저 호출) */
+    let fileHandle = null;
+    if (window.showSaveFilePicker) {
+      try {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PNG 이미지', accept: { 'image/png': ['.png'] } }]
+        });
+      } catch (e) {
+        if (e.name === 'AbortError') return; /* 취소 */
+      }
+    }
+
     const prog = document.getElementById('exp-prog');
     prog.classList.add('show');
     try {
       const canvas = await renderBannerToCanvas(b);
       if (canvas) {
-        const link = document.createElement('a');
-        link.download = `Showcasing_${currentBanner + 1}.png`;
-        link.href     = canvas.toDataURL('image/png');
-        link.click();
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob); await writable.close();
+        } else {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = filename; link.href = url; link.click();
+          URL.revokeObjectURL(url);
+        }
       }
     } catch (e) {
       if (e.name === 'SecurityError') {
@@ -1751,28 +1772,45 @@
     prog.classList.remove('show');
   }
 
-  /* ── 한번에 내보내기: 배경 있는 모든 배너 순차 다운로드 ── */
+  /* ── 한번에 내보내기: 폴더 선택 후 배경 있는 모든 배너 저장 ── */
   async function doExportAll() {
     saveBanner(currentBanner);
-    const exportable = BANNERS.filter(b => b.imgs && b.imgs['bg']);
+    const exportable = BANNERS.map((b, i) => ({ b, i })).filter(({ b }) => b.imgs && b.imgs['bg']);
     if (exportable.length === 0) {
       alert('배경 사진이 설정된 배너가 없습니다.');
       return;
     }
 
+    /* 저장 폴더 선택 (유저 제스처 컨텍스트 내에서 먼저 호출) */
+    let dirHandle = null;
+    if (window.showDirectoryPicker) {
+      try {
+        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      } catch (e) {
+        if (e.name === 'AbortError') return; /* 취소 */
+      }
+    }
+
     const prog = document.getElementById('exp-prog');
     prog.classList.add('show');
     try {
-      for (let i = 0; i < BANNERS.length; i++) {
-        const b = BANNERS[i];
-        if (!b.imgs || !b.imgs['bg']) continue;
+      for (let idx = 0; idx < exportable.length; idx++) {
+        const { b, i } = exportable[idx];
         const canvas = await renderBannerToCanvas(b);
-        if (canvas) {
+        if (!canvas) continue;
+        const filename = `Showcasing_${i + 1}.png`;
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        if (dirHandle) {
+          const fh = await dirHandle.getFileHandle(filename, { create: true });
+          const writable = await fh.createWritable();
+          await writable.write(blob); await writable.close();
+        } else {
+          /* fallback: 순차 다운로드 */
+          const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `Showcasing_${i + 1}.png`;
-          link.href     = canvas.toDataURL('image/png');
-          link.click();
-          if (i < BANNERS.length - 1) await sleep(300);
+          link.download = filename; link.href = url; link.click();
+          URL.revokeObjectURL(url);
+          if (idx < exportable.length - 1) await sleep(300);
         }
       }
     } catch (e) {
@@ -1927,14 +1965,29 @@
   }
 
   /* JSON 프로젝트 파일 다운로드 (이미지 포함) */
-  function saveProject() {
+  async function saveProject() {
     const state = collectState({ withImages: true });
     const blob  = new Blob([JSON.stringify(state)], { type: 'application/json' });
-    const url   = URL.createObjectURL(blob);
-    const a     = document.createElement('a');
     const ts    = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    a.download  = `${ts}_binaryshop-showcasing.json`;
-    a.href = url; a.click();
+    const suggestedName = `${ts}_binaryshop-showcasing.json`;
+
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName,
+          types: [{ description: 'JSON 프로젝트 파일', accept: { 'application/json': ['.json'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob); await writable.close();
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; /* 취소 */
+      }
+    }
+    /* fallback */
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.download = suggestedName; a.href = url; a.click();
     URL.revokeObjectURL(url);
   }
 
