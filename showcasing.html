@@ -868,6 +868,7 @@
   let isLogoDragging = false, ldStartX, ldStartY, ldLogoX0, ldLogoY0;
   /* 로고 리사이즈 */
   let isLogoResizing = false, lrCorner = '', lrStartX, lrStartY, lrW0, lrH0, lrX0, lrY0;
+  let logoScSelected = false; /* true = 로고 조정 핸들 표시 */
 
   let imgs = {}; /* let (was const) – reassigned on banner switch */
   let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
@@ -991,6 +992,7 @@
     bgW = b.bgW; bgH = b.bgH; bgX = b.bgX; bgY = b.bgY;
     natAspect = b.natAspect; minBgW = b.minBgW;
     logoScDataUrl = b.logoScDataUrl;
+    logoScSelected = false; /* 배너 전환 시 로고 선택 해제 */
     logoScX = b.logoScX; logoScY = b.logoScY;
     logoScW = b.logoScW; logoScH = b.logoScH;
     logoScNatAsp = b.logoScNatAsp;
@@ -1036,9 +1038,11 @@
     if (b.logoScDataUrl) {
       logoImg.src = b.logoScDataUrl;
       logoEl.style.display = 'block';
+      logoEl.style.pointerEvents = 'auto'; logoEl.style.cursor = 'pointer';
       document.getElementById('logo-guide-sc').classList.add('visible');
     } else {
       logoEl.style.display = 'none';
+      logoEl.style.pointerEvents = 'none'; logoEl.style.cursor = '';
       document.getElementById('logo-guide-sc').classList.remove('visible');
     }
     /* wm-row visibility */
@@ -1553,6 +1557,27 @@
         applyLogoSc();
       }
     });
+
+    /* ---- 로고 클릭 → 선택 / 빈 공간 클릭 → 해제 ---- */
+    const _logoElSc = document.getElementById('cv-logo-sc');
+    const _wrapElSc = document.getElementById('canvas-sel-wrap');
+    if (_logoElSc) {
+      _logoElSc.addEventListener('mousedown', e => {
+        if (logoScDataUrl) e.stopPropagation(); /* bg 드래그 방지 */
+      });
+      _logoElSc.addEventListener('click', e => {
+        if (!logoScDataUrl) return;
+        logoScSelected = true; updateLogoSelSc(); e.stopPropagation();
+      });
+    }
+    if (_wrapElSc) {
+      _wrapElSc.addEventListener('click', e => {
+        if (!logoScSelected) return;
+        if (e.target.closest('#sel-overlay-logo')) return; /* 핸들 클릭 */
+        if (_logoElSc && _logoElSc.contains(e.target)) return; /* 로고 클릭 */
+        logoScSelected = false; updateLogoSelSc();
+      });
+    }
   }
 
   /* ── 13자 제한 ── */
@@ -1606,7 +1631,9 @@
         const img = document.getElementById('cv-logo-sc-img');
         img.src = logoScDataUrl;
         el.style.display = 'block';
+        el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer';
         applyLogoSc();
+        logoScSelected = true; /* 새 로고 업로드 시 자동 선택 */
         document.getElementById('logo-guide-sc').classList.add('visible');
         if (BANNERS.length > 0) updateActiveThumb();
       };
@@ -1640,7 +1667,7 @@
   function updateLogoSelSc() {
     const ov = document.getElementById('sel-overlay-logo');
     if (!ov) return;
-    if (!logoScDataUrl) { ov.style.display = 'none'; return; }
+    if (!logoScDataUrl || !logoScSelected) { ov.style.display = 'none'; return; }
     ov.style.display = 'block';
     ov.style.left    = (logoScX * DS) + 'px';
     ov.style.top     = (logoScY * DS) + 'px';
