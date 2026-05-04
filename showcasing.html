@@ -1571,10 +1571,10 @@
       });
     }
     if (_wrapElSc) {
-      _wrapElSc.addEventListener('click', e => {
+      _wrapElSc.addEventListener('mousedown', e => {
         if (!logoScSelected) return;
-        if (e.target.closest('#sel-overlay-logo')) return; /* 핸들 클릭 */
-        if (_logoElSc && _logoElSc.contains(e.target)) return; /* 로고 클릭 */
+        if (e.target.closest('#sel-overlay-logo')) return; /* 핸들 */
+        if (_logoElSc && _logoElSc.contains(e.target)) return; /* 로고 */
         logoScSelected = false; updateLogoSelSc();
       });
     }
