@@ -54,29 +54,97 @@
       display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
     }
 
-    /* ── Restore Banner ── */
-    .restore-banner {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      padding: 10px 14px; flex-shrink: 0;
-      background: #F0EFFE; border-bottom: 1px solid #CEC9FC;
+    /* ── Save Bar ── */
+    .save-bar-wrap { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    .save-bar {
+      display: flex; align-items: center;
+      padding: 8px 12px; gap: 6px;
+      background: #fff;
     }
-    .restore-banner-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .restore-banner-icon { color: #605DFF; flex-shrink: 0; }
-    .restore-banner-title { font-size: 12.5px; font-weight: 700; color: var(--black); white-space: nowrap; }
-    .restore-banner-sub   { font-size: 11px; color: #605DFF; margin-top: 2px; }
-    .restore-banner-btns  { display: flex; gap: 6px; flex-shrink: 0; }
-    .restore-btn-continue {
-      height: 30px; padding: 0 12px;
-      background: #605DFF; color: #fff; border: none; border-radius: 7px;
-      font-size: 12px; font-weight: 700; font-family: var(--ff); cursor: pointer; white-space: nowrap;
+    .save-bar-btn {
+      display: flex; align-items: center; gap: 5px;
+      height: 30px; padding: 0 10px;
+      background: var(--gray1); border: 1px solid var(--border); border-radius: 7px;
+      font-size: 12px; font-weight: 600; font-family: var(--ff); color: var(--black);
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
     }
-    .restore-btn-continue:hover { background: #4e4be0; }
-    .restore-btn-new {
-      height: 30px; padding: 0 12px;
-      background: #fff; color: var(--gray4); border: 1px solid var(--border); border-radius: 7px;
-      font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer; white-space: nowrap;
+    .save-bar-btn:hover { background: var(--gray2); }
+    .save-bar-btn.primary { background: #605DFF; color: #fff; border-color: #605DFF; }
+    .save-bar-btn.primary:hover { background: #4e4be0; }
+    .save-bar-spacer { flex: 1; }
+    .save-count-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; margin-left: 1px;
+      background: #605DFF; color: #fff; border-radius: 50%;
+      font-size: 10px; font-weight: 700;
     }
-    .restore-btn-new:hover { background: var(--gray1); }
+    /* ── Save / Restore Dialog Panels ── */
+    .save-dialog-panel,
+    .restore-dialog-panel {
+      background: #F8F7FF; border-top: 1px solid #CEC9FC; padding: 12px 14px;
+    }
+    .sdp-hd {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+    }
+    .sdp-title { font-size: 13px; font-weight: 700; color: var(--black); }
+    .sdp-close {
+      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; color: var(--gray3);
+      font-size: 15px; border-radius: 4px; font-family: var(--ff); line-height: 1;
+    }
+    .sdp-close:hover { background: var(--gray2); color: var(--black); }
+    .sdp-label { font-size: 11px; font-weight: 600; color: var(--gray4); margin-bottom: 5px; display: block; }
+    .sdp-hint { font-weight: 400; color: var(--gray3); }
+    .sdp-input {
+      width: 100%; height: 34px; padding: 0 10px;
+      border: 1px solid var(--border); border-radius: 7px;
+      font-size: 13px; font-family: var(--ff); color: var(--black);
+      background: #fff; margin-bottom: 12px; outline: none;
+    }
+    .sdp-input:focus { border-color: #605DFF; }
+    /* Save slot grid */
+    .save-slots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .save-slot-btn {
+      display: flex; flex-direction: column; align-items: flex-start;
+      padding: 8px 10px; gap: 2px;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 8px;
+      cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s;
+      font-family: var(--ff); width: 100%;
+    }
+    .save-slot-btn:hover { border-color: #605DFF; background: #F0EFFE; }
+    .save-slot-btn.occupied { border-color: #C4C2FC; }
+    .slot-num {
+      font-size: 10px; font-weight: 700; color: #605DFF;
+      background: #EAE9FF; padding: 1px 6px; border-radius: 4px; margin-bottom: 2px;
+    }
+    .slot-title { font-size: 12px; font-weight: 600; color: var(--black); line-height: 1.3; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .slot-date { font-size: 10.5px; color: var(--gray3); }
+    .slot-empty { font-size: 12px; color: var(--gray3); }
+    /* Restore slot list */
+    .restore-slots-list { display: flex; flex-direction: column; gap: 6px; }
+    .restore-slot-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; gap: 8px;
+      background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    }
+    .rsi-info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+    .rsi-tag {
+      width: 26px; height: 26px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--gray2); border-radius: 6px;
+      font-size: 11px; font-weight: 700; color: var(--gray4);
+    }
+    .rsi-tag.auto { background: #EAE9FF; color: #605DFF; font-size: 9px; }
+    .rsi-detail { min-width: 0; }
+    .rsi-title { font-size: 12px; font-weight: 700; color: var(--black); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rsi-meta { font-size: 11px; color: var(--gray3); margin-top: 1px; }
+    .rsi-btn {
+      height: 28px; padding: 0 10px; flex-shrink: 0;
+      background: #605DFF; color: #fff; border: none; border-radius: 6px;
+      font-size: 11.5px; font-weight: 700; font-family: var(--ff); cursor: pointer; white-space: nowrap;
+    }
+    .rsi-btn:hover { background: #4e4be0; }
+    .restore-empty { text-align: center; color: var(--gray3); font-size: 12.5px; padding: 16px 0; }
     .panel-scroll { overflow-y: auto; padding: 16px 0 0; }
 
     /* ── Tab bar ── */
@@ -520,24 +588,42 @@
       <a class="tab-item" href="magazine.html">Binary Magazine</a>
     </div>
 
-    <!-- 이전 작업 복구 배너 (localStorage 감지 시 표시) -->
-    <div class="restore-banner" id="restore-banner" style="display:none">
-      <div class="restore-banner-info">
-        <svg class="restore-banner-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <rect x="3" y="2" width="13" height="16" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M6 2v-1h6v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M6 8h7M6 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          <rect x="12" y="13" width="8" height="7" rx="1.5" fill="#F0EFFE" stroke="currentColor" stroke-width="1.3"/>
-          <path d="M14.5 16.5h3M16 15v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-        <div>
-          <p class="restore-banner-title">이전 작업 저장 기록이 있어요</p>
-          <p class="restore-banner-sub" id="restore-banner-sub">이어서 작업하시겠어요?</p>
-        </div>
+    <!-- 저장/불러오기 바 -->
+    <div class="save-bar-wrap" id="save-bar-wrap">
+      <!-- 메인 버튼 바 (항상 표시) -->
+      <div class="save-bar">
+        <button class="save-bar-btn primary" onclick="openSaveDialog()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2.5A.5.5 0 012.5 2h6.793L11 3.707V10.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8z" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="7" width="5" height="4" rx=".4" stroke="currentColor" stroke-width="1.1"/><rect x="4" y="2" width="3.5" height="2.5" rx=".4" stroke="currentColor" stroke-width="1.1"/></svg>
+          저장하기
+        </button>
+        <div class="save-bar-spacer"></div>
+        <button class="save-bar-btn" id="btn-restore-slots" onclick="openRestoreDialog()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5a4.5 4.5 0 104.5-4.5H5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 4.5L2.5 6.5 5 8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          불러오기
+          <span class="save-count-badge" id="save-count-badge" style="display:none">0</span>
+        </button>
       </div>
-      <div class="restore-banner-btns">
-        <button class="restore-btn-continue" onclick="doRestoreContinue()">이어하기 →</button>
-        <button class="restore-btn-new" onclick="doRestoreDismiss()">새로 쓰기</button>
+
+      <!-- 저장 다이얼로그 (저장하기 클릭 시 표시) -->
+      <div class="save-dialog-panel" id="save-dialog-panel" style="display:none">
+        <div class="sdp-hd">
+          <span class="sdp-title">저장하기</span>
+          <button class="sdp-close" onclick="closeSaveDialog()">✕</button>
+        </div>
+        <label class="sdp-label">작업 제목</label>
+        <input type="text" id="save-title-input" class="sdp-input" placeholder="제목 없음" maxlength="30"
+          onkeydown="if(event.key==='Escape')closeSaveDialog()">
+        <label class="sdp-label">슬롯 선택 <span class="sdp-hint">· 슬롯을 클릭해서 저장</span></label>
+        <div class="save-slots-grid" id="save-slots-grid"></div>
+      </div>
+
+      <!-- 불러오기 다이얼로그 (불러오기 클릭 시 표시) -->
+      <div class="restore-dialog-panel" id="restore-dialog-panel" style="display:none">
+        <div class="sdp-hd">
+          <span class="sdp-title">불러오기</span>
+          <button class="sdp-close" onclick="closeRestoreDialog()">✕</button>
+        </div>
+        <div class="restore-slots-list" id="restore-slots-list"></div>
       </div>
     </div>
 
@@ -1336,20 +1422,19 @@
     rp();
     initInteraction();
 
-    /* IndexedDB에 이전 작업이 있으면 복구 배너 표시
-       localStorage 메타로 빠르게 존재 여부 확인 후 IDB에서 전체 상태(이미지 포함) 로드 */
+    /* IndexedDB에 이전 자동저장이 있으면 메모리에 로드해둠 (불러오기 다이얼로그에서 사용) */
     try {
       const meta = JSON.parse(localStorage.getItem(LS_META) || 'null');
       if (meta && meta.savedAt) {
         const state = await _idbGet();
         if (state && Array.isArray(state.banners) && state.banners.length > 0) {
           _pendingRestoreState = state;
-          showRestoreBanner(state);
         }
       }
     } catch (e) {
       console.warn('[autosave] load failed:', e);
     }
+    updateSaveCountBadge();
   };
 
   function toggleSec(hd) {
@@ -1954,13 +2039,15 @@
 
   /* ══════════════════════════════════════════
      프로젝트 저장 / 불러오기 & 자동저장 (IndexedDB)
+     ─ 자동저장 슬롯 1개 (state-v1) + 수동저장 슬롯 4개 (manual-1 ~ manual-4)
      localStorage(5~10MB)는 이미지 포함 시 QuotaExceededError 발생 →
      IndexedDB(용량 제한 없음)로 교체해 이미지까지 완전 복원
   ══════════════════════════════════════════ */
-  const IDB_NAME  = 'binaryshop-showcasing';
-  const IDB_STORE = 'autosave';
-  const IDB_KEY   = 'state-v1';
-  const LS_META   = 'binaryshop-showcasing-meta-v1'; /* localStorage: 감지용 메타만 */
+  const IDB_NAME       = 'binaryshop-showcasing';
+  const IDB_STORE      = 'autosave';
+  const IDB_KEY        = 'state-v1';
+  const LS_META        = 'binaryshop-showcasing-meta-v1';    /* 자동저장 감지용 메타 */
+  const LS_MANUAL_META = 'binaryshop-showcasing-manual-v1'; /* 수동저장 슬롯 메타 */
 
   let _autoSaveTimer = null;
   let _pendingRestoreState = null;
@@ -1998,6 +2085,186 @@
       tx.objectStore(IDB_STORE).delete(IDB_KEY);
       tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
     });
+  }
+
+  /* ── IndexedDB 수동 슬롯 헬퍼 (키: manual-1 ~ manual-4) ── */
+  async function _idbPutManual(slotNum, val) {
+    const db = await _openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(val, `manual-${slotNum}`);
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  }
+  async function _idbGetManual(slotNum) {
+    const db = await _openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const r  = tx.objectStore(IDB_STORE).get(`manual-${slotNum}`);
+      r.onsuccess = e => res(e.target.result ?? null);
+      r.onerror   = e => rej(e.target.error);
+    });
+  }
+
+  /* 수동저장 메타 (localStorage) */
+  function getManualMeta() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(LS_MANUAL_META) || 'null');
+      if (parsed && Array.isArray(parsed.slots) && parsed.slots.length === 4) return parsed;
+    } catch {}
+    return { slots: [null, null, null, null] };
+  }
+
+  /* 저장 개수 뱃지 업데이트 */
+  function updateSaveCountBadge() {
+    const manualMeta  = getManualMeta();
+    const manualCount = manualMeta.slots.filter(Boolean).length;
+    const autoMeta    = JSON.parse(localStorage.getItem(LS_META) || 'null');
+    const total = manualCount + (autoMeta?.savedAt ? 1 : 0);
+    const badge = document.getElementById('save-count-badge');
+    if (!badge) return;
+    badge.textContent  = total;
+    badge.style.display = total > 0 ? '' : 'none';
+  }
+
+  /* HTML 이스케이프 */
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── 저장 다이얼로그 ── */
+  function openSaveDialog() {
+    closeRestoreDialog();
+    renderSaveSlots();
+    document.getElementById('save-dialog-panel').style.display = '';
+    const inp = document.getElementById('save-title-input');
+    if (inp) { inp.focus(); inp.select(); }
+  }
+  function closeSaveDialog() {
+    document.getElementById('save-dialog-panel').style.display = 'none';
+  }
+
+  function renderSaveSlots() {
+    const meta = getManualMeta();
+    const grid = document.getElementById('save-slots-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const s   = meta.slots[i];
+      const btn = document.createElement('button');
+      btn.className = 'save-slot-btn' + (s ? ' occupied' : '');
+      const slotNum = i + 1;
+      if (s) {
+        const d = new Date(s.savedAt);
+        const dateStr = d.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        btn.innerHTML = `<span class="slot-num">슬롯 ${slotNum}</span><span class="slot-title">${escHtml(s.title)}</span><span class="slot-date">${dateStr} · 배너 ${s.count}개</span>`;
+      } else {
+        btn.innerHTML = `<span class="slot-num">슬롯 ${slotNum}</span><span class="slot-empty">빈 슬롯</span>`;
+      }
+      btn.onclick = () => confirmAndSaveManual(slotNum);
+      grid.appendChild(btn);
+    }
+  }
+
+  async function confirmAndSaveManual(slotNum) {
+    const meta     = getManualMeta();
+    const existing = meta.slots[slotNum - 1];
+    if (existing) {
+      if (!confirm(`슬롯 ${slotNum} "${existing.title}"을(를) 덮어쓰시겠습니까?`)) return;
+    }
+    await doSaveManual(slotNum);
+  }
+
+  async function doSaveManual(slotNum) {
+    const titleInput = document.getElementById('save-title-input');
+    const title = (titleInput?.value || '').trim() || `저장 ${slotNum}`;
+    const state = collectState({ withImages: true });
+    state.title = title;
+    try {
+      await _idbPutManual(slotNum, state);
+      const meta = getManualMeta();
+      meta.slots[slotNum - 1] = { title, savedAt: state.savedAt, count: state.banners.length };
+      localStorage.setItem(LS_MANUAL_META, JSON.stringify(meta));
+      updateSaveCountBadge();
+      closeSaveDialog();
+    } catch (e) {
+      alert('저장에 실패했습니다: ' + e.message);
+    }
+  }
+
+  /* ── 불러오기 다이얼로그 ── */
+  function openRestoreDialog() {
+    closeSaveDialog();
+    renderRestoreSlots();
+    document.getElementById('restore-dialog-panel').style.display = '';
+  }
+  function closeRestoreDialog() {
+    document.getElementById('restore-dialog-panel').style.display = 'none';
+  }
+
+  function renderRestoreSlots() {
+    const list = document.getElementById('restore-slots-list');
+    if (!list) return;
+    const items = [];
+
+    /* 자동저장 슬롯 */
+    try {
+      const autoMeta = JSON.parse(localStorage.getItem(LS_META) || 'null');
+      if (autoMeta?.savedAt) {
+        items.push({ type: 'auto', title: '자동 저장', savedAt: autoMeta.savedAt, count: autoMeta.count || 1 });
+      }
+    } catch {}
+
+    /* 수동저장 슬롯 */
+    const manualMeta = getManualMeta();
+    manualMeta.slots.forEach((s, i) => {
+      if (s) items.push({ type: 'manual', slotNum: i + 1, title: s.title, savedAt: s.savedAt, count: s.count });
+    });
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="restore-empty">저장된 작업이 없습니다</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(item => {
+      const d = new Date(item.savedAt);
+      const dateStr = d.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      const el  = document.createElement('div');
+      el.className = 'restore-slot-item';
+      const tagText  = item.type === 'auto' ? '자동' : item.slotNum;
+      const tagClass = item.type === 'auto' ? 'rsi-tag auto' : 'rsi-tag';
+      const action   = item.type === 'auto' ? 'doRestoreAuto()' : `loadManualSlot(${item.slotNum})`;
+      el.innerHTML = `
+        <div class="rsi-info">
+          <div class="${tagClass}">${tagText}</div>
+          <div class="rsi-detail">
+            <div class="rsi-title">${escHtml(item.title)}</div>
+            <div class="rsi-meta">배너 ${item.count}개 · ${dateStr}</div>
+          </div>
+        </div>
+        <button class="rsi-btn" onclick="${action}">이어하기 →</button>`;
+      list.appendChild(el);
+    });
+  }
+
+  /* 자동저장 슬롯 복원 */
+  async function doRestoreAuto() {
+    try {
+      const state = _pendingRestoreState || await _idbGet();
+      if (state) await applyState(state);
+    } catch (e) { alert('불러오기 실패: ' + e.message); }
+    closeRestoreDialog();
+  }
+
+  /* 수동저장 슬롯 복원 */
+  async function loadManualSlot(slotNum) {
+    try {
+      const state = await _idbGetManual(slotNum);
+      if (state) await applyState(state);
+      else alert(`슬롯 ${slotNum}에 저장된 데이터가 없습니다.`);
+    } catch (e) { alert('불러오기 실패: ' + e.message); }
+    closeRestoreDialog();
   }
 
   /* 전체 상태 수집. withImages:false → base64 이미지 제외 (localStorage용) */
@@ -2067,7 +2334,7 @@
       try {
         const state = JSON.parse(ev.target.result);
         await applyState(state);
-        hideRestoreBanner(); /* 복구 배너가 떠 있다면 닫기 */
+        closeRestoreDialog();
       } catch {
         alert('파일을 불러오는 데 실패했습니다.\n올바른 프로젝트 파일인지 확인해주세요.');
       }
@@ -2087,41 +2354,11 @@
         localStorage.setItem(LS_META, JSON.stringify({
           savedAt: state.savedAt, count: state.banners.length
         }));
+        updateSaveCountBadge();
       } catch (e) {
         console.warn('[autosave] failed:', e);
       }
     }, 600);
-  }
-
-  /* 복구 배너 표시 */
-  function showRestoreBanner(state) {
-    const el = document.getElementById('restore-banner');
-    if (!el) return;
-    const count = state.banners?.length || 1;
-    const d = new Date(state.savedAt);
-    const label = `배너 ${count}개 · ${d.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 저장`;
-    const sub = document.getElementById('restore-banner-sub');
-    if (sub) sub.textContent = label;
-    el.style.display = '';
-  }
-
-  function hideRestoreBanner() {
-    const el = document.getElementById('restore-banner');
-    if (el) el.style.display = 'none';
-    _pendingRestoreState = null;
-  }
-
-  /* 이어하기 버튼 */
-  function doRestoreContinue() {
-    if (_pendingRestoreState) applyState(_pendingRestoreState);
-    hideRestoreBanner();
-  }
-
-  /* 새로 쓰기 버튼 */
-  function doRestoreDismiss() {
-    localStorage.removeItem(LS_META);
-    _idbDel().catch(() => {});
-    hideRestoreBanner();
   }
 </script>
 </body>
