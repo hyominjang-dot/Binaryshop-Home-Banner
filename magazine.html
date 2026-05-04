@@ -259,6 +259,17 @@
 
     /* 2번 SVG 업로드 박스 – 높이 절반 (aspect-ratio 2:1) */
     #ub-logo { aspect-ratio: 2 / 1; }
+    /* 로고 삭제 버튼 */
+    .btn-logo-reset {
+      height: 22px; padding: 0 8px; flex-shrink: 0;
+      background: #fff; color: var(--gray4);
+      border: 1px solid var(--border); border-radius: 5px;
+      font-size: 11px; font-weight: 600; font-family: var(--ff); cursor: pointer;
+      display: none; align-items: center; gap: 3px; transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-logo-reset.show { display: flex; }
+    .btn-logo-reset:hover { border-color: #999; color: var(--black); }
+    .logo-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 
     /* 프리셋 로고 토글 행 */
     .preset-logo-row {
@@ -441,7 +452,16 @@
             </label>
           </div>
           <div class="fg" style="margin-bottom:0;margin-top:20px">
-            <label class="fl">로고 SVG · 위치: 로고 안전 영역</label>
+            <div class="logo-label-row">
+              <span class="fl" style="margin-bottom:0">로고 SVG · 위치: 로고 안전 영역</span>
+              <button class="btn-logo-reset" id="btn-logo-reset-mg" onclick="resetLogo()">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M9.5 5.5A4 4 0 1 1 7 1.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M7 1v2.2h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                새로고침
+              </button>
+            </div>
             <div class="upload-box" id="ub-logo">
               <input type="file" accept=".svg,image/svg+xml" onchange="loadLogo(event)">
               <span class="upload-lbl">+ SVG 업로드</span>
@@ -777,10 +797,26 @@
         applyLogoMg();
         logoSelected = true; /* 새 로고 업로드 시 자동 선택 */
         document.getElementById('logo-guide-mg').classList.add('visible');
+        document.getElementById('btn-logo-reset-mg')?.classList.add('show');
       };
       tmpImg.src = logoDataUrl;
     };
     reader.readAsDataURL(file);
+  }
+
+  function resetLogo() {
+    logoDataUrl = null;
+    logoSelected = false;
+    logoNatAsp = 1;
+    logoW = LOGO_GUIDE_MG.w; logoH = LOGO_GUIDE_MG.h;
+    logoX = LOGO_GUIDE_MG.x; logoY = LOGO_GUIDE_MG.y;
+    const cvEl = document.getElementById('cv-logo');
+    if (cvEl) { cvEl.classList.remove('has-logo'); cvEl.style.pointerEvents = 'none'; cvEl.style.cursor = ''; }
+    updateLogoSelMg();
+    document.getElementById('logo-guide-mg').classList.remove('visible');
+    const ub = document.getElementById('ub-logo');
+    if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
+    document.getElementById('btn-logo-reset-mg')?.classList.remove('show');
   }
 
   function clampLogoMg() {
