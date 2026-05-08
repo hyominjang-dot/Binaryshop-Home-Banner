@@ -818,7 +818,7 @@ PATH.B ~20%</textarea>
       <hr class="action-divider">
 
       <!-- 한번에 내보내기 ZIP (전체 폭) -->
-      <button class="btn-exp" style="width:100%" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
+      <button class="btn-exp" style="width:100%;flex:none" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
 
       <!-- URL 결과 (버튼은 banner-nav 로 이동 / URL 생성 후 표시) -->
       <div class="url-result" id="url-result">
@@ -1247,16 +1247,11 @@ PATH.B ~20%</textarea>
     saveBanner(currentBanner);
     const [moved] = BANNERS.splice(fromIdx, 1);
     BANNERS.splice(toIdx, 0, moved);
-    /* currentBanner가 이동한 배너면 새 위치로, 아니면 밀린 방향에 따라 보정 */
-    if (currentBanner === fromIdx) {
-      currentBanner = toIdx;
-    } else if (fromIdx < toIdx) {
-      if (currentBanner > fromIdx && currentBanner <= toIdx) currentBanner--;
-    } else {
-      if (currentBanner >= toIdx && currentBanner < fromIdx) currentBanner++;
-    }
-    const pg = Math.floor(currentBanner / 5);
-    if (pg !== thumbPage) thumbPage = pg;
+    /* 드래그한 배너(toIdx)를 현재 배너로 설정.
+       thumbPage는 절대 변경하지 않음 — 드래그는 항상 현재 페이지 내에서만 가능하므로
+       toIdx는 현재 thumbPage 범위 안에 있음. currentBanner가 다른 페이지에 있어도
+       thumbPage를 재계산하면 엉뚱한 페이지로 이동하는 버그 발생. */
+    currentBanner = toIdx;
     loadBanner(currentBanner);
     updateBannerNav();
     renderThumbStrip();
