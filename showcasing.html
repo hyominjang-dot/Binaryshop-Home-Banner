@@ -415,10 +415,15 @@
     .logo-drag-handle { position: absolute; inset: 0; cursor: default; pointer-events: none; }
     /* ── Logo safe-area guide (inside canvas, 3x coords) ── */
     .logo-safe-guide {
-      position: absolute; background: rgba(27, 110, 243, 0.3);
-      border-radius: 50%; pointer-events: none; display: none; z-index: 9;
+      position: absolute;
+      border: 2px dashed rgba(255,255,255,0.85);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+      pointer-events: none; display: none; z-index: 9; transition: none;
     }
-    .logo-safe-guide.visible { display: block; }
+    /* ── Logo size slider ── */
+    .logo-size-row { display: none; align-items: center; gap: 8px; margin-top: 6px; }
+    .logo-size-row input[type=range] { flex: 1; accent-color: var(--accent); }
+    .logo-size-val { font-size: 12px; color: var(--gray4); min-width: 36px; text-align: right; font-weight: 500; flex-shrink: 0; }
 
     /* Export progress */
     .exp-prog {
@@ -745,6 +750,11 @@ PATH.B ~20%</textarea>
               <input type="file" accept=".svg,image/svg+xml" onchange="loadLogoSc(event)">
               <span class="upload-lbl">+ SVG 업로드</span>
             </div>
+            <div class="logo-size-row" id="logo-size-row-sc">
+              <span style="font-size:12px;color:var(--gray4);flex-shrink:0">크기</span>
+              <input type="range" id="logo-size-sc" min="20" max="200" value="100" oninput="updateLogoSizeSc(this.value)">
+              <span id="logo-size-val-sc" class="logo-size-val">100px</span>
+            </div>
           </div>
           <!-- 유의사항 -->
           <div style="font-size:11px; color:var(--gray3); margin-top:10px;">유의사항 : 브랜드 LOGO SVG 미취합 건 진행시 마케팅 디자인팀에 SVG 변경 요청</div>
@@ -926,19 +936,6 @@ PATH.B ~20%</textarea>
           <div class="sel-h rh sel-ml" data-corner="ml"></div>
           <div class="sel-h rh sel-mr" data-corner="mr"></div>
         </div>
-        <!-- 로고 선택 오버레이 -->
-        <div id="sel-overlay-logo">
-          <div class="sel-border-inner"></div>
-          <div class="logo-drag-handle" id="logo-drag-sc"></div>
-          <div class="sel-h rh sel-tl" data-lc="tl"></div>
-          <div class="sel-h rh sel-tr" data-lc="tr"></div>
-          <div class="sel-h rh sel-bl" data-lc="bl"></div>
-          <div class="sel-h rh sel-br" data-lc="br"></div>
-          <div class="sel-h rh sel-tc" data-lc="tc"></div>
-          <div class="sel-h rh sel-bc" data-lc="bc"></div>
-          <div class="sel-h rh sel-ml" data-lc="ml"></div>
-          <div class="sel-h rh sel-mr" data-lc="mr"></div>
-        </div>
       </div>
 
       <div class="preview-label">375 × 562px · 출력 1125 × 1686px</div>
@@ -982,10 +979,6 @@ PATH.B ~20%</textarea>
   let logoScW = LOGO_GUIDE.w, logoScH = LOGO_GUIDE.h;
   let logoScNatAsp = 1; /* natH / natW */
   /* 로고 드래그 */
-  let isLogoDragging = false, ldStartX, ldStartY, ldLogoX0, ldLogoY0;
-  /* 로고 리사이즈 */
-  let isLogoResizing = false, lrCorner = '', lrStartX, lrStartY, lrW0, lrH0, lrX0, lrY0;
-  let logoScSelected = false; /* true = 로고 조정 핸들 표시 */
 
   let imgs = {}; /* let (was const) – reassigned on banner switch */
   let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
@@ -1109,7 +1102,6 @@ PATH.B ~20%</textarea>
     bgW = b.bgW; bgH = b.bgH; bgX = b.bgX; bgY = b.bgY;
     natAspect = b.natAspect; minBgW = b.minBgW;
     logoScDataUrl = b.logoScDataUrl;
-    logoScSelected = false; /* 배너 전환 시 로고 선택 해제 */
     logoScX = b.logoScX; logoScY = b.logoScY;
     logoScW = b.logoScW; logoScH = b.logoScH;
     logoScNatAsp = b.logoScNatAsp;
@@ -1158,19 +1150,25 @@ PATH.B ~20%</textarea>
     if (b.logoScDataUrl) {
       logoImg.src = b.logoScDataUrl;
       logoEl.style.display = 'block';
-      logoEl.style.pointerEvents = 'auto'; logoEl.style.cursor = 'pointer';
-      document.getElementById('logo-guide-sc').classList.add('visible');
+      logoEl.style.pointerEvents = 'none';
+      const restoredW = Math.min(200, Math.max(20, Math.round(logoScW / 3)));
+      document.getElementById('logo-size-sc').value = restoredW;
+      document.getElementById('logo-size-val-sc').textContent = restoredW + 'px';
+      document.getElementById('logo-size-row-sc').style.display = 'flex';
       document.getElementById('btn-logo-reset-sc')?.classList.add('show');
     } else {
       logoEl.style.display = 'none';
-      logoEl.style.pointerEvents = 'none'; logoEl.style.cursor = '';
-      document.getElementById('logo-guide-sc').classList.remove('visible');
+      logoEl.style.pointerEvents = 'none';
+      const guide = document.getElementById('logo-guide-sc');
+      if (guide) guide.style.display = 'none';
+      document.getElementById('logo-size-row-sc').style.display = 'none';
+      document.getElementById('logo-size-sc').value = 100;
+      document.getElementById('logo-size-val-sc').textContent = '100px';
       document.getElementById('btn-logo-reset-sc')?.classList.remove('show');
     }
     /* wm-row visibility */
     document.getElementById('wm-row').style.display = b.wmOn ? 'block' : 'none';
-    /* re-render canvas + sel overlays */
-    updateLogoSelSc();
+    /* re-render canvas */
     rp();
   }
 
@@ -1636,68 +1634,7 @@ PATH.B ~20%</textarea>
         document.getElementById('canvas').classList.remove('dragging');
       }
       isResizing = false;
-      isLogoDragging = false;
-      isLogoResizing = false;
     });
-
-    /* ---- 로고 핸들 리사이즈 ---- */
-    document.querySelectorAll('#sel-overlay-logo .sel-h[data-lc]').forEach(h => {
-      h.addEventListener('mousedown', e => {
-        isLogoResizing = true;
-        lrCorner = h.dataset.lc;
-        lrStartX = e.clientX; lrStartY = e.clientY;
-        lrW0 = logoScW; lrH0 = logoScH; lrX0 = logoScX; lrY0 = logoScY;
-        e.stopPropagation(); e.preventDefault();
-      });
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (isLogoResizing) {
-        const dx = (e.clientX - lrStartX) / DS;
-        const dy = (e.clientY - lrStartY) / DS;
-        const minW = 30;
-        let newW = lrW0, newH = lrH0;
-        /* 우정렬 + 세로 중앙 고정: 우측 엣지(G.x+G.w)·세로중심(cy) 기준 확대축소 */
-        const cy = lrY0 + lrH0 / 2; /* 리사이즈 시작 시점의 세로 중심 */
-        switch(lrCorner) {
-          case 'br': case 'tr': case 'mr': newW=Math.max(minW,lrW0+dx); newH=newW*logoScNatAsp; break;
-          case 'bl': case 'tl': case 'ml': newW=Math.max(minW,lrW0-dx); newH=newW*logoScNatAsp; break;
-          case 'bc': newH=Math.max(minW*logoScNatAsp,lrH0+dy); newW=newH/logoScNatAsp; break;
-          case 'tc': newH=Math.max(minW*logoScNatAsp,lrH0-dy); newW=newH/logoScNatAsp; break;
-        }
-        /* 가이드 기준 최대 20px(display)=60px(canvas) 초과 확대 잠금 */
-        const G = LOGO_GUIDE, m = 60;
-        const maxW  = G.w + m;                              /* 좌: G.x-m까지 허용 */
-        const maxH  = Math.min(2*(cy-(G.y-m)), 2*(G.y+G.h+m-cy)); /* 상/하 대칭 */
-        newW = Math.min(newW, maxW, Math.max(minW, maxH / logoScNatAsp));
-        newH = newW * logoScNatAsp;
-        logoScX = G.x + G.w - newW;  /* 가이드 우측 엣지 고정 */
-        logoScY = cy - newH / 2;      /* 세로 중앙 고정 → 상/하 동시 확대 */
-        logoScW = newW; logoScH = newH;
-        applyLogoSc();
-      }
-    });
-
-    /* ---- 로고 클릭 → 선택 / 빈 공간 클릭 → 해제 ---- */
-    const _logoElSc = document.getElementById('cv-logo-sc');
-    const _wrapElSc = document.getElementById('canvas-sel-wrap');
-    if (_logoElSc) {
-      _logoElSc.addEventListener('mousedown', e => {
-        if (logoScDataUrl) e.stopPropagation(); /* bg 드래그 방지 */
-      });
-      _logoElSc.addEventListener('click', e => {
-        if (!logoScDataUrl) return;
-        logoScSelected = true; updateLogoSelSc(); e.stopPropagation();
-      });
-    }
-    if (_wrapElSc) {
-      _wrapElSc.addEventListener('mousedown', e => {
-        if (!logoScSelected) return;
-        if (e.target.closest('#sel-overlay-logo')) return; /* 핸들 */
-        if (_logoElSc && _logoElSc.contains(e.target)) return; /* 로고 */
-        logoScSelected = false; updateLogoSelSc();
-      });
-    }
   }
 
   /* ── 13자 제한 (단일 input용) ── */
@@ -1764,10 +1701,13 @@ PATH.B ~20%</textarea>
         const img = document.getElementById('cv-logo-sc-img');
         img.src = logoScDataUrl;
         el.style.display = 'block';
-        el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer';
+        el.style.pointerEvents = 'none';
         applyLogoSc();
-        logoScSelected = true; /* 새 로고 업로드 시 자동 선택 */
-        document.getElementById('logo-guide-sc').classList.add('visible');
+        const initW = Math.min(200, Math.max(20, Math.round(logoScW / 3)));
+        document.getElementById('logo-size-sc').value = initW;
+        document.getElementById('logo-size-val-sc').textContent = initW + 'px';
+        document.getElementById('logo-size-row-sc').style.display = 'flex';
+        showLogoGuideSc(); hideLogoGuideAfterSc(800);
         document.getElementById('btn-logo-reset-sc')?.classList.add('show');
         if (BANNERS.length > 0) updateActiveThumb();
       };
@@ -1778,19 +1718,40 @@ PATH.B ~20%</textarea>
 
   function resetLogoSc() {
     logoScDataUrl = null;
-    logoScSelected = false;
     logoScNatAsp = 1;
     logoScW = LOGO_GUIDE.w; logoScH = LOGO_GUIDE.h;
     logoScX = LOGO_GUIDE.x; logoScY = LOGO_GUIDE.y;
     const cvEl = document.getElementById('cv-logo-sc');
     if (cvEl) { cvEl.style.display = 'none'; cvEl.style.pointerEvents = 'none'; cvEl.style.cursor = ''; }
-    updateLogoSelSc();
-    document.getElementById('logo-guide-sc').classList.remove('visible');
+    const guide = document.getElementById('logo-guide-sc');
+    if (guide) guide.style.display = 'none';
+    document.getElementById('logo-size-row-sc').style.display = 'none';
+    document.getElementById('logo-size-sc').value = 100;
+    document.getElementById('logo-size-val-sc').textContent = '100px';
     const ub = document.getElementById('ub-logo-sc');
     if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
     document.getElementById('btn-logo-reset-sc')?.classList.remove('show');
     if (BANNERS.length > 0) { saveBanner(currentBanner); updateActiveThumb(); }
     lsAutoSave();
+  }
+
+  function showLogoGuideSc() {
+    const g = document.getElementById('logo-guide-sc');
+    if (g) g.style.display = 'block';
+  }
+  function hideLogoGuideAfterSc(ms) {
+    const g = document.getElementById('logo-guide-sc');
+    if (!g) return;
+    clearTimeout(g._t);
+    g._t = setTimeout(() => { g.style.display = 'none'; }, ms);
+  }
+  function updateLogoSizeSc(val) {
+    document.getElementById('logo-size-val-sc').textContent = val + 'px';
+    logoScW = Math.max(30, Math.round(val * 3));
+    logoScH = logoScW * logoScNatAsp;
+    applyLogoSc();
+    showLogoGuideSc(); hideLogoGuideAfterSc(800);
+    if (BANNERS.length > 0) updateActiveThumb();
   }
 
   function clampLogoSc() {
@@ -1812,18 +1773,6 @@ PATH.B ~20%</textarea>
       el.style.width  = logoScW + 'px';
       el.style.height = logoScH + 'px';
     }
-    updateLogoSelSc();
-  }
-
-  function updateLogoSelSc() {
-    const ov = document.getElementById('sel-overlay-logo');
-    if (!ov) return;
-    if (!logoScDataUrl || !logoScSelected) { ov.style.display = 'none'; return; }
-    ov.style.display = 'block';
-    ov.style.left    = (logoScX * DS) + 'px';
-    ov.style.top     = (logoScY * DS) + 'px';
-    ov.style.width   = (logoScW * DS) + 'px';
-    ov.style.height  = (logoScH * DS) + 'px';
   }
 
   function onWmToggle() {
