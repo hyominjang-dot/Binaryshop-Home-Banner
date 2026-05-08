@@ -1704,15 +1704,15 @@ PATH.B ~20%</textarea>
         el.style.display = 'block';
         el.style.pointerEvents = 'none';
         applyLogoSc();
-        /* 슬라이더 범위: 우측정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
+        /* 슬라이더 범위: 우측정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금
+           min = X축 기준만 사용 (Y축 min은 asp에 따라 max 초과 가능) */
         const G_sc = LOGO_GUIDE, m_sc = 60;
         const maxWsc = Math.min(G_sc.w + m_sc, (G_sc.h + 2 * m_sc) / Math.max(logoScNatAsp, 0.01));
-        const minWsc = Math.max(G_sc.w - m_sc, (G_sc.h - 2 * m_sc) / Math.max(logoScNatAsp, 0.01));
         const sliderMax_sc = Math.max(20, Math.floor(maxWsc / 3));
-        const sliderMin_sc = Math.max(20, Math.ceil(minWsc / 3));
+        const sliderMin_sc = Math.min(sliderMax_sc, Math.max(20, Math.ceil(Math.max(0, G_sc.w - m_sc) / 3)));
         const slider_sc = document.getElementById('logo-size-sc');
-        slider_sc.max = sliderMax_sc;
         slider_sc.min = sliderMin_sc;
+        slider_sc.max = sliderMax_sc;
         const initW = Math.min(sliderMax_sc, Math.max(sliderMin_sc, Math.round(logoScW / 3)));
         slider_sc.value = initW;
         document.getElementById('logo-size-val-sc').textContent = initW + 'px';

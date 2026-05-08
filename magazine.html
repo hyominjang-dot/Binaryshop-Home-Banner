@@ -1161,12 +1161,12 @@
         /* 슬라이더 범위: 중앙정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
         const G_mg = LOGO_GUIDE_MG, m_mg = 60;
         const maxWmg = Math.min(G_mg.w + 2 * m_mg, (G_mg.h + 2 * m_mg) / Math.max(logoNatAsp, 0.01));
-        const minWmg = Math.max(G_mg.w - 2 * m_mg, (G_mg.h - 2 * m_mg) / Math.max(logoNatAsp, 0.01));
         const sliderMax_mg = Math.max(20, Math.floor(maxWmg / 3));
-        const sliderMin_mg = Math.max(20, Math.ceil(minWmg / 3));
+        /* min = X축 기준만 사용 (Y축 min은 asp에 따라 max 초과 가능) */
+        const sliderMin_mg = Math.min(sliderMax_mg, Math.max(20, Math.ceil(Math.max(0, G_mg.w - 2 * m_mg) / 3)));
         const slider_mg = document.getElementById('logo-size-mg');
-        slider_mg.max = sliderMax_mg;
         slider_mg.min = sliderMin_mg;
+        slider_mg.max = sliderMax_mg;
         const initW = Math.min(sliderMax_mg, Math.max(sliderMin_mg, Math.round(logoW / 3)));
         slider_mg.value = initW;
         document.getElementById('logo-size-val-mg').textContent = initW + 'px';
