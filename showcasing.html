@@ -261,13 +261,6 @@
     }
     .btn-exp:hover { opacity: 0.8; }
     .btn-exp:disabled { opacity: 0.4; cursor: wait; }
-    .btn-exp-out {
-      flex: 1; height: 36px; background: #fff; color: var(--black);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      font-size: 12px; font-weight: 600; font-family: var(--ff);
-      cursor: pointer; transition: border-color 0.15s;
-    }
-    .btn-exp-out:hover { border-color: #888; }
 
     /* ── Right Preview Area ── */
     .preview-area {
@@ -444,14 +437,6 @@
       background: var(--panel); border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    .bnav-actions { display: flex; gap: 5px; }
-    .bnav-remove {
-      height: 26px; padding: 0 10px;
-      background: #F2F2F2; color: #C0C0C0; border: 1px solid #E2E2E2;
-      border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--ff);
-      cursor: pointer; white-space: nowrap;
-    }
-    .bnav-remove:hover { background: #E8E8E8; color: #999; }
     /* Action bar – column layout */
     .action-bar {
       display: flex; flex-direction: column;
@@ -461,8 +446,6 @@
       flex-shrink: 0;
     }
     .action-row { display: flex; gap: 8px; }
-    /* 한번에 내보내기: full-width (action-bar 직속 btn-exp) */
-    .action-bar > .btn-exp { flex: none; width: 100%; }
     /* 프로젝트 저장/불러오기 버튼 — 흰색 + 라인 */
     .btn-proj-load, .btn-proj-save {
       flex: 1; height: 36px;
@@ -519,20 +502,29 @@
       font-size: 12px; font-weight: 600; min-width: 44px; text-align: center;
       color: var(--black);
     }
-    .bnav-add {
-      height: 26px; padding: 0 10px;
-      background: var(--black); color: #fff; border: none;
-      border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--ff);
-      cursor: pointer; white-space: nowrap;
-    }
-    .bnav-add:hover:not(:disabled) { opacity: 0.8; }
-    .bnav-add:disabled { opacity: 0.35; cursor: default; }
-
     /* ── Mini Preview Strip ── */
     .mp-strip-wrap {
       display: flex; flex-direction: column; align-items: center; gap: 8px;
       padding-top: 2px;
     }
+    /* 추가/제거 버튼 컬럼 */
+    .mp-page-btns { display: flex; flex-direction: column; gap: 6px; align-self: center; }
+    .mp-btn-add, .mp-btn-remove {
+      width: 32px; height: 32px; border-radius: 8px;
+      font-size: 20px; font-weight: 400; font-family: var(--ff);
+      cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .mp-btn-add {
+      background: var(--black); color: #fff; border: none;
+    }
+    .mp-btn-add:hover:not(:disabled) { opacity: 0.75; }
+    .mp-btn-add:disabled { opacity: 0.3; cursor: default; }
+    .mp-btn-remove {
+      background: #F2F2F2; color: #888; border: 1px solid #E2E2E2;
+    }
+    .mp-btn-remove:hover { background: #E8E8E8; color: #555; }
     .thumb-page-nav { display: flex; align-items: center; gap: 6px; }
     .tpnav-btn {
       width: 24px; height: 24px;
@@ -651,10 +643,6 @@
         <button class="bnav-btn" id="bnav-prev" onclick="prevBanner()">&#8249;</button>
         <span class="bnav-count" id="bnav-count">1 / 1</span>
         <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
-      </div>
-      <div class="bnav-actions">
-        <button class="bnav-remove" id="bnav-remove" onclick="removeBanner()" style="display:none">- 제거</button>
-        <button class="bnav-add" id="bnav-add" onclick="addBanner()">+ 추가</button>
       </div>
     </div>
 
@@ -815,10 +803,9 @@ PATH.B ~20%</textarea>
 
       <!-- 내보내기 -->
       <div class="action-row">
-        <button class="btn-exp-out" onclick="doReset()">새로고침</button>
         <button class="btn-exp" onclick="doExportCurrent()">페이지 내보내기 (PNG)</button>
+        <button class="btn-exp" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
       </div>
-      <button class="btn-exp" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
 
       <hr class="action-divider">
 
@@ -949,12 +936,18 @@ PATH.B ~20%</textarea>
           <span class="tpnav-count" id="tp-count">1 / 1</span>
           <button class="tpnav-btn" id="tp-next" onclick="nextThumbPage()">&#8250;</button>
         </div>
-        <div class="mp-row">
-          <div class="mp-slot" id="mt-0" onclick="onThumbClick(0)"></div>
-          <div class="mp-slot" id="mt-1" onclick="onThumbClick(1)"></div>
-          <div class="mp-slot" id="mt-2" onclick="onThumbClick(2)"></div>
-          <div class="mp-slot" id="mt-3" onclick="onThumbClick(3)"></div>
-          <div class="mp-slot" id="mt-4" onclick="onThumbClick(4)"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="mp-row">
+            <div class="mp-slot" id="mt-0" onclick="onThumbClick(0)"></div>
+            <div class="mp-slot" id="mt-1" onclick="onThumbClick(1)"></div>
+            <div class="mp-slot" id="mt-2" onclick="onThumbClick(2)"></div>
+            <div class="mp-slot" id="mt-3" onclick="onThumbClick(3)"></div>
+            <div class="mp-slot" id="mt-4" onclick="onThumbClick(4)"></div>
+          </div>
+          <div class="mp-page-btns">
+            <button class="mp-btn-add" id="mp-btn-add" onclick="addBanner()" title="배너 추가">+</button>
+            <button class="mp-btn-remove" id="mp-btn-remove" onclick="removeBanner()" title="현재 배너 제거" style="display:none">−</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1227,9 +1220,10 @@ PATH.B ~20%</textarea>
     document.getElementById('bnav-count').textContent = `${currentBanner + 1} / ${BANNERS.length}`;
     document.getElementById('bnav-prev').disabled = currentBanner === 0;
     document.getElementById('bnav-next').disabled = currentBanner >= BANNERS.length - 1;
-    document.getElementById('bnav-add').disabled  = BANNERS.length >= 15;
+    const addBtn = document.getElementById('mp-btn-add');
+    if (addBtn) addBtn.disabled = BANNERS.length >= 15;
     /* - 제거 버튼: 배너 2개 이상일 때만 표시 */
-    const removeBtn = document.getElementById('bnav-remove');
+    const removeBtn = document.getElementById('mp-btn-remove');
     if (removeBtn) removeBtn.style.display = BANNERS.length >= 2 ? '' : 'none';
   }
 
