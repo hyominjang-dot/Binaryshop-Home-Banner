@@ -1704,13 +1704,16 @@ PATH.B ~20%</textarea>
         el.style.display = 'block';
         el.style.pointerEvents = 'none';
         applyLogoSc();
-        /* 슬라이더 최댓값: 우측정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
+        /* 슬라이더 범위: 우측정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
         const G_sc = LOGO_GUIDE, m_sc = 60;
         const maxWsc = Math.min(G_sc.w + m_sc, (G_sc.h + 2 * m_sc) / Math.max(logoScNatAsp, 0.01));
+        const minWsc = Math.max(G_sc.w - m_sc, (G_sc.h - 2 * m_sc) / Math.max(logoScNatAsp, 0.01));
         const sliderMax_sc = Math.max(20, Math.floor(maxWsc / 3));
+        const sliderMin_sc = Math.max(20, Math.ceil(minWsc / 3));
         const slider_sc = document.getElementById('logo-size-sc');
         slider_sc.max = sliderMax_sc;
-        const initW = Math.min(sliderMax_sc, Math.max(20, Math.round(logoScW / 3)));
+        slider_sc.min = sliderMin_sc;
+        const initW = Math.min(sliderMax_sc, Math.max(sliderMin_sc, Math.round(logoScW / 3)));
         slider_sc.value = initW;
         document.getElementById('logo-size-val-sc').textContent = initW + 'px';
         document.getElementById('logo-size-row-sc').style.display = 'flex';
@@ -1734,7 +1737,7 @@ PATH.B ~20%</textarea>
     if (guide) guide.style.display = 'none';
     document.getElementById('logo-size-row-sc').style.display = 'none';
     const _sliderSc = document.getElementById('logo-size-sc');
-    _sliderSc.max = 200; _sliderSc.value = 100;
+    _sliderSc.min = 20; _sliderSc.max = 200; _sliderSc.value = 100;
     document.getElementById('logo-size-val-sc').textContent = '100px';
     const ub = document.getElementById('ub-logo-sc');
     if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
@@ -1745,7 +1748,13 @@ PATH.B ~20%</textarea>
 
   function showLogoGuideSc() {
     const g = document.getElementById('logo-guide-sc');
-    if (g) g.style.display = 'block';
+    if (!g || !logoScDataUrl) return;
+    /* 가이드 타원을 현재 로고 실제 좌표에 맞게 위치/크기 갱신 */
+    g.style.left   = logoScX + 'px';
+    g.style.top    = logoScY + 'px';
+    g.style.width  = logoScW + 'px';
+    g.style.height = logoScH + 'px';
+    g.style.display = 'block';
   }
   function hideLogoGuideAfterSc(ms) {
     const g = document.getElementById('logo-guide-sc');

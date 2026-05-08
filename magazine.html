@@ -1158,13 +1158,16 @@
         logoEl.classList.add('has-logo');
         logoEl.style.pointerEvents = 'none';
         applyLogoMg();
-        /* 슬라이더 최댓값: 중앙정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
+        /* 슬라이더 범위: 중앙정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
         const G_mg = LOGO_GUIDE_MG, m_mg = 60;
         const maxWmg = Math.min(G_mg.w + 2 * m_mg, (G_mg.h + 2 * m_mg) / Math.max(logoNatAsp, 0.01));
+        const minWmg = Math.max(G_mg.w - 2 * m_mg, (G_mg.h - 2 * m_mg) / Math.max(logoNatAsp, 0.01));
         const sliderMax_mg = Math.max(20, Math.floor(maxWmg / 3));
+        const sliderMin_mg = Math.max(20, Math.ceil(minWmg / 3));
         const slider_mg = document.getElementById('logo-size-mg');
         slider_mg.max = sliderMax_mg;
-        const initW = Math.min(sliderMax_mg, Math.max(20, Math.round(logoW / 3)));
+        slider_mg.min = sliderMin_mg;
+        const initW = Math.min(sliderMax_mg, Math.max(sliderMin_mg, Math.round(logoW / 3)));
         slider_mg.value = initW;
         document.getElementById('logo-size-val-mg').textContent = initW + 'px';
         document.getElementById('logo-size-row-mg').style.display = 'flex';
@@ -1187,7 +1190,7 @@
     if (guide) guide.style.display = 'none';
     document.getElementById('logo-size-row-mg').style.display = 'none';
     const _sliderMg = document.getElementById('logo-size-mg');
-    _sliderMg.max = 200; _sliderMg.value = 100;
+    _sliderMg.min = 20; _sliderMg.max = 200; _sliderMg.value = 100;
     document.getElementById('logo-size-val-mg').textContent = '100px';
     const ub = document.getElementById('ub-logo');
     if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
@@ -1196,7 +1199,13 @@
 
   function showLogoGuideMg() {
     const g = document.getElementById('logo-guide-mg');
-    if (g) g.style.display = 'block';
+    if (!g || !logoDataUrl) return;
+    /* 가이드 타원을 현재 로고 실제 좌표에 맞게 위치/크기 갱신 */
+    g.style.left   = logoX + 'px';
+    g.style.top    = logoY + 'px';
+    g.style.width  = logoW + 'px';
+    g.style.height = logoH + 'px';
+    g.style.display = 'block';
   }
   function hideLogoGuideAfterMg(ms) {
     const g = document.getElementById('logo-guide-mg');
