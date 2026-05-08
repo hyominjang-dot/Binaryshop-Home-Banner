@@ -343,8 +343,7 @@
       z-index: 3; pointer-events: none; padding: 0 72px 72px;
     }
     .cv-category { font-size: 45px; font-weight: 600; color: #fff; margin-bottom: 12px; line-height: 63px; }
-    .cv-title    { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; word-break: keep-all; }
-    .cv-subtitle { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; }
+    .cv-title    { font-size: 72px; font-weight: 400; color: #fff; letter-spacing: -0.9px; line-height: 96px; word-break: keep-all; white-space: pre-line; }
     /* counter: Figma 25px(1x)=75px(3x) from bottom, 20px(1x)=60px(3x) from right */
     .cv-counter  {
       position: absolute; bottom: 75px; right: 60px;
@@ -691,12 +690,12 @@
             <input class="fi" type="text" id="f-category" value="Brandcast" oninput="rp()">
           </div>
           <div class="fg">
-            <label class="fl">메인타이틀 (상)</label>
-            <input class="fi" type="text" id="f-title" placeholder="싱그러운 여름의 향기" oninput="limitAndRp(this)" value="싱그러운 여름의 향기" maxlength="13">
-          </div>
-          <div class="fg">
-            <label class="fl">메인타이틀 (하)</label>
-            <input class="fi" type="text" id="f-subtitle" placeholder="PATH.B ~20%" oninput="limitAndRp(this)" value="PATH.B ~20%" maxlength="13">
+            <label class="fl">메인타이틀</label>
+            <textarea class="fi" id="f-title" rows="2" oninput="limitAndRpTitle(this)"
+              placeholder="싱그러운 여름의 향기&#10;PATH.B ~20%"
+              style="resize:none; line-height:1.6; padding-top:8px; padding-bottom:8px">싱그러운 여름의 향기
+PATH.B ~20%</textarea>
+            <div style="font-size:11px; color:var(--gray3); margin-top:6px; line-height:1.5">유의사항 : 타이틀은 미리보기용이며 실제 타이틀은 admin으로 셋팅 됩니다</div>
           </div>
         </div>
       </div>
@@ -895,8 +894,7 @@
           <!-- Layer 3: 텍스트 -->
           <div class="cv-content">
             <div class="cv-category" id="cv-cat">Brandcast</div>
-            <div class="cv-title"    id="cv-title"></div>
-            <div class="cv-subtitle" id="cv-subtitle"></div>
+            <div class="cv-title" id="cv-title"></div>
           </div>
 
           <div class="cv-counter" id="cv-counter">01/12</div>
@@ -1052,8 +1050,8 @@
       logoScNatAsp: 1,
       gradOn: true,
       category: 'Brandcast',
-      title: '싱그러운 여름의 향기',
-      subtitle: 'PATH.B ~20%',
+      title: '싱그러운 여름의 향기\nPATH.B ~20%',
+      subtitle: '',
       presetJyOn: false,
       wmOn: false,
       wmName: '오늘의집 유저명',
@@ -1077,7 +1075,7 @@
     b.gradOn     = document.getElementById('f-grad-on').checked;
     b.category   = document.getElementById('f-category').value;
     b.title      = document.getElementById('f-title').value;
-    b.subtitle   = document.getElementById('f-subtitle').value;
+    b.subtitle   = '';
     b.presetJyOn = document.getElementById('preset-jy-on').checked;
     b.wmOn       = document.getElementById('f-wm-on').checked;
     b.wmName     = document.getElementById('f-wm-name').value;
@@ -1105,8 +1103,11 @@
     /* restore form fields */
     document.getElementById('f-grad-on').checked    = b.gradOn;
     document.getElementById('f-category').value     = b.category;
-    document.getElementById('f-title').value        = b.title;
-    document.getElementById('f-subtitle').value     = b.subtitle;
+    /* 구버전 저장 파일 호환: title+subtitle 분리 → 통합 */
+    const mergedTitle = b.subtitle && !b.title.includes('\n')
+      ? b.title + (b.subtitle ? '\n' + b.subtitle : '')
+      : b.title;
+    document.getElementById('f-title').value = mergedTitle;
     document.getElementById('preset-jy-on').checked = b.presetJyOn;
     document.getElementById('f-wm-on').checked      = b.wmOn;
     document.getElementById('f-wm-name').value      = b.wmName;
@@ -1332,8 +1333,7 @@
       content.className = 'cv-content';
       content.innerHTML =
         `<div class="cv-category">${b.category || ''}</div>` +
-        `<div class="cv-title">${b.title || ''}</div>` +
-        `<div class="cv-subtitle">${b.subtitle || ''}</div>`;
+        `<div class="cv-title" style="white-space:pre-line">${b.title || ''}</div>`;
       mc.appendChild(content);
 
       const counter = document.createElement('div');
@@ -1687,10 +1687,23 @@
     }
   }
 
-  /* ── 13자 제한 ── */
+  /* ── 13자 제한 (단일 input용) ── */
   function limitAndRp(el) {
     el.value = el.value.replace(/[\r\n]/g, '');
     if (el.value.length > 13) el.value = el.value.slice(0, 13);
+    rp();
+  }
+
+  /* ── 메인타이틀 textarea: 줄별 13자, 최대 2줄 ── */
+  function limitAndRpTitle(el) {
+    const lines = el.value.split('\n');
+    const clamped = lines.slice(0, 2).map(l => l.slice(0, 13));
+    const joined = clamped.join('\n');
+    if (el.value !== joined) {
+      const pos = el.selectionStart;
+      el.value = joined;
+      el.selectionStart = el.selectionEnd = Math.min(pos, joined.length);
+    }
     rp();
   }
 
@@ -1819,8 +1832,7 @@
     document.querySelector('.cv-chrome').style.display   = gradOn ? '' : 'none';
 
     document.getElementById('cv-cat').textContent      = document.getElementById('f-category').value;
-    document.getElementById('cv-title').textContent    = document.getElementById('f-title').value;
-    document.getElementById('cv-subtitle').textContent = document.getElementById('f-subtitle').value;
+    document.getElementById('cv-title').textContent = document.getElementById('f-title').value;
 
     const wmOn   = document.getElementById('f-wm-on').checked;
     const wmEl   = document.getElementById('cv-photo-by');
