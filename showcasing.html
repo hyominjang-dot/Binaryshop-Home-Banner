@@ -547,8 +547,29 @@
       flex-shrink: 0; transition: box-shadow 0.15s;
     }
     .mp-slot.active { box-shadow: 0 0 0 2.5px #1b6ef3; }
-    .mp-slot.empty  { opacity: 0.3; cursor: default; pointer-events: none; }
+    /* 비활성 배너: 미묘한 dim 오버레이 */
+    .mp-slot:not(.active):not(.empty)::before {
+      content: ''; position: absolute; inset: 0; z-index: 5;
+      background: rgba(0,0,0,0.18); pointer-events: none; border-radius: 8px;
+    }
     .mp-slot:hover:not(.active):not(.empty) { box-shadow: 0 0 0 2.5px var(--gray3); }
+    /* 빈 슬롯 — 추가 가능한 플레이스홀더 */
+    .mp-slot.empty {
+      cursor: pointer; pointer-events: auto; opacity: 1;
+    }
+    .mp-slot.empty:hover .mp-empty-frame { border-color: rgba(0,0,0,0.3); background: rgba(0,0,0,0.06); }
+    .mp-empty-frame {
+      width: 140px; height: 210px;
+      border: 1.5px dashed rgba(0,0,0,0.18);
+      border-radius: 6px;
+      background: rgba(0,0,0,0.03);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .mp-empty-icon {
+      color: rgba(0,0,0,0.22); font-size: 22px; font-weight: 300;
+      line-height: 1; pointer-events: none; user-select: none;
+    }
     /* mp-frame: clipping box — 1125×1686 scaled ×0.125 = 140.6×210.75 */
     .mp-frame {
       width: 140px; height: 210px;
@@ -799,8 +820,7 @@ PATH.B ~20%</textarea>
       <div class="action-row">
         <button class="btn-proj-load" onclick="document.getElementById('proj-file-input').click()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M1 10v2.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 4.5V11a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5.5a.5.5 0 0 0-.5-.5H6.5L5.5 3H1.5a.5.5 0 0 0-.5.5V4.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
           </svg>
           불러오기
         </button>
@@ -1267,15 +1287,25 @@ PATH.B ~20%</textarea>
   function renderThumb(slotEl, bannerIdx) {
     slotEl.innerHTML = '';
     slotEl.className = 'mp-slot';
+    slotEl.title = '';
 
-    /* 빈 슬롯 */
+    /* 빈 슬롯 — 추가 가능 플레이스홀더 */
     if (bannerIdx >= BANNERS.length) {
       slotEl.classList.add('empty');
+      slotEl.title = '배너 추가';
+      slotEl.onclick = () => { if (BANNERS.length < 15) addBanner(); };
       const emptyFrame = document.createElement('div');
-      emptyFrame.className = 'mp-frame';
+      emptyFrame.className = 'mp-empty-frame';
+      const plusEl = document.createElement('div');
+      plusEl.className = 'mp-empty-icon';
+      plusEl.textContent = '+';
+      emptyFrame.appendChild(plusEl);
       slotEl.appendChild(emptyFrame);
       return;
     }
+
+    /* 비어있지 않은 슬롯: onclick을 항상 명시적으로 재설정 (empty→filled 전환 시 stale handler 방지) */
+    slotEl.onclick = () => goBanner(bannerIdx);
 
     if (bannerIdx === currentBanner) slotEl.classList.add('active');
 
