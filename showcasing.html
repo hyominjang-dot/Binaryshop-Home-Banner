@@ -417,6 +417,7 @@
     .logo-safe-guide {
       position: absolute;
       border: 2px dashed rgba(255,255,255,0.85);
+      border-radius: 50%;
       box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
       pointer-events: none; display: none; z-index: 9; transition: none;
     }
@@ -1703,8 +1704,14 @@ PATH.B ~20%</textarea>
         el.style.display = 'block';
         el.style.pointerEvents = 'none';
         applyLogoSc();
-        const initW = Math.min(200, Math.max(20, Math.round(logoScW / 3)));
-        document.getElementById('logo-size-sc').value = initW;
+        /* 슬라이더 최댓값: 우측정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
+        const G_sc = LOGO_GUIDE, m_sc = 60;
+        const maxWsc = Math.min(G_sc.w + m_sc, (G_sc.h + 2 * m_sc) / Math.max(logoScNatAsp, 0.01));
+        const sliderMax_sc = Math.max(20, Math.floor(maxWsc / 3));
+        const slider_sc = document.getElementById('logo-size-sc');
+        slider_sc.max = sliderMax_sc;
+        const initW = Math.min(sliderMax_sc, Math.max(20, Math.round(logoScW / 3)));
+        slider_sc.value = initW;
         document.getElementById('logo-size-val-sc').textContent = initW + 'px';
         document.getElementById('logo-size-row-sc').style.display = 'flex';
         showLogoGuideSc(); hideLogoGuideAfterSc(800);
@@ -1726,7 +1733,8 @@ PATH.B ~20%</textarea>
     const guide = document.getElementById('logo-guide-sc');
     if (guide) guide.style.display = 'none';
     document.getElementById('logo-size-row-sc').style.display = 'none';
-    document.getElementById('logo-size-sc').value = 100;
+    const _sliderSc = document.getElementById('logo-size-sc');
+    _sliderSc.max = 200; _sliderSc.value = 100;
     document.getElementById('logo-size-val-sc').textContent = '100px';
     const ub = document.getElementById('ub-logo-sc');
     if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
@@ -1746,22 +1754,23 @@ PATH.B ~20%</textarea>
     g._t = setTimeout(() => { g.style.display = 'none'; }, ms);
   }
   function updateLogoSizeSc(val) {
+    const G = LOGO_GUIDE;
     document.getElementById('logo-size-val-sc').textContent = val + 'px';
     logoScW = Math.max(30, Math.round(val * 3));
     logoScH = logoScW * logoScNatAsp;
+    /* 우측 정렬 고정, 세로 중앙 고정 */
+    logoScX = G.x + G.w - logoScW;
+    logoScY = G.y + (G.h - logoScH) / 2;
     applyLogoSc();
     showLogoGuideSc(); hideLogoGuideAfterSc(800);
     if (BANNERS.length > 0) updateActiveThumb();
   }
 
   function clampLogoSc() {
-    const G = LOGO_GUIDE, m = 60; /* 20px display × 3 = 60 canvas px */
-    /* 우측 엣지를 가이드 우측(G.x + G.w)에 항상 고정 */
+    const G = LOGO_GUIDE;
+    /* 슬라이더 방식: 위치는 항상 우측 정렬·세로 중앙 고정 */
     logoScX = G.x + G.w - logoScW;
-    /* Y 클램프: 가이드 ±20px(display) */
-    const minY = G.y - m;
-    const maxY = G.y + G.h + m - logoScH;
-    logoScY = Math.min(Math.max(logoScY, minY), Math.max(minY, maxY));
+    logoScY = G.y + (G.h - logoScH) / 2;
   }
 
   function applyLogoSc() {

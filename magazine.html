@@ -455,6 +455,7 @@
     .logo-safe-guide {
       position: absolute;
       border: 2px dashed rgba(255,255,255,0.85);
+      border-radius: 50%;
       box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
       pointer-events: none; display: none; z-index: 9; transition: none;
     }
@@ -1157,8 +1158,14 @@
         logoEl.classList.add('has-logo');
         logoEl.style.pointerEvents = 'none';
         applyLogoMg();
-        const initW = Math.min(200, Math.max(20, Math.round(logoW / 3)));
-        document.getElementById('logo-size-mg').value = initW;
+        /* 슬라이더 최댓값: 중앙정렬 기준 가이드 ±20px(display)=±60px(canvas) 잠금 */
+        const G_mg = LOGO_GUIDE_MG, m_mg = 60;
+        const maxWmg = Math.min(G_mg.w + 2 * m_mg, (G_mg.h + 2 * m_mg) / Math.max(logoNatAsp, 0.01));
+        const sliderMax_mg = Math.max(20, Math.floor(maxWmg / 3));
+        const slider_mg = document.getElementById('logo-size-mg');
+        slider_mg.max = sliderMax_mg;
+        const initW = Math.min(sliderMax_mg, Math.max(20, Math.round(logoW / 3)));
+        slider_mg.value = initW;
         document.getElementById('logo-size-val-mg').textContent = initW + 'px';
         document.getElementById('logo-size-row-mg').style.display = 'flex';
         showLogoGuideMg(); hideLogoGuideAfterMg(800);
@@ -1179,7 +1186,8 @@
     const guide = document.getElementById('logo-guide-mg');
     if (guide) guide.style.display = 'none';
     document.getElementById('logo-size-row-mg').style.display = 'none';
-    document.getElementById('logo-size-mg').value = 100;
+    const _sliderMg = document.getElementById('logo-size-mg');
+    _sliderMg.max = 200; _sliderMg.value = 100;
     document.getElementById('logo-size-val-mg').textContent = '100px';
     const ub = document.getElementById('ub-logo');
     if (ub) { ub.style.backgroundImage = ''; ub.classList.remove('has-img'); }
@@ -1206,18 +1214,7 @@
     showLogoGuideMg(); hideLogoGuideAfterMg(800);
   }
 
-  function clampLogoMg() {
-    const G = LOGO_GUIDE_MG, m = 60; /* 20px display × 3 = 60 canvas px */
-    const minX = G.x - m;
-    const maxX = G.x + G.w + m - logoW;
-    const minY = G.y - m;
-    const maxY = G.y + G.h + m - logoH;
-    logoX = Math.min(Math.max(logoX, minX), Math.max(minX, maxX));
-    logoY = Math.min(Math.max(logoY, minY), Math.max(minY, maxY));
-  }
-
   function applyLogoMg() {
-    clampLogoMg();
     const el = document.getElementById('cv-logo');
     if (el) {
       el.style.left   = logoX + 'px';
