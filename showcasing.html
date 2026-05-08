@@ -265,7 +265,7 @@
     /* ── Right Preview Area ── */
     .preview-area {
       display: flex; align-items: flex-start; justify-content: center;
-      padding: 28px 24px; overflow-y: auto; background: #F8FAFC;
+      padding: 28px 24px; overflow-y: auto; background: #F4F2EE;
     }
     .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .preview-label {
@@ -460,18 +460,7 @@
     .action-divider {
       border: none; border-top: 1px solid var(--border); margin: 0 -20px;
     }
-    /* URL 생성 섹션 */
-    .url-gen-section { display: flex; flex-direction: column; gap: 8px; }
-    .btn-url-gen {
-      width: 100%; height: 36px;
-      background: #fff; color: var(--black);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      font-size: 12px; font-weight: 600; font-family: var(--ff); cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: border-color 0.15s;
-    }
-    .btn-url-gen:hover:not(:disabled) { border-color: #888; }
-    .btn-url-gen:disabled { opacity: 0.5; cursor: wait; }
+    /* URL 결과 표시 영역 (생성 버튼은 banner-nav 로 이동) */
     .url-result { display: none; gap: 6px; align-items: stretch; }
     .url-result.show { display: flex; }
     .url-input {
@@ -488,6 +477,17 @@
       transition: background 0.15s;
     }
     .btn-url-copy.copied { background: #22a55b; }
+    .bnav-right { display: flex; align-items: center; gap: 6px; }
+    .bnav-exp, .bnav-url {
+      height: 26px; padding: 0 9px;
+      background: #fff; color: var(--black);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 11px; font-weight: 600; font-family: var(--ff); cursor: pointer;
+      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+      transition: border-color 0.15s;
+    }
+    .bnav-exp:hover, .bnav-url:hover { border-color: #888; }
+    .bnav-url:disabled { opacity: 0.5; cursor: wait; }
     .bnav-arrows { display: flex; align-items: center; gap: 6px; }
     .bnav-btn {
       width: 26px; height: 26px;
@@ -643,6 +643,22 @@
         <button class="bnav-btn" id="bnav-prev" onclick="prevBanner()">&#8249;</button>
         <span class="bnav-count" id="bnav-count">1 / 1</span>
         <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
+      </div>
+      <div class="bnav-right">
+        <button class="bnav-exp" onclick="doExportCurrent()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M6 1v6M3.5 5l2.5 2.5L8.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          내보내기 (PNG)
+        </button>
+        <button class="bnav-url" id="btn-url-gen" onclick="doGenUrl()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4.5 7a2.5 2.5 0 0 0 3.54.2l1.25-1.25A2.5 2.5 0 0 0 5.75 2.25l-.71.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M7.5 5a2.5 2.5 0 0 0-3.54-.2L2.71 6.05A2.5 2.5 0 0 0 6.25 9.75l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          URL 생성
+        </button>
       </div>
     </div>
 
@@ -801,27 +817,13 @@ PATH.B ~20%</textarea>
 
       <hr class="action-divider">
 
-      <!-- 내보내기 -->
-      <div class="action-row">
-        <button class="btn-exp" onclick="doExportCurrent()">페이지 내보내기 (PNG)</button>
-        <button class="btn-exp" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
-      </div>
+      <!-- 한번에 내보내기 ZIP (전체 폭) -->
+      <button class="btn-exp" style="width:100%" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
 
-      <hr class="action-divider">
-
-      <!-- URL 생성 -->
-      <div class="url-gen-section">
-        <button class="btn-url-gen" id="btn-url-gen" onclick="doGenUrl()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5.5 8a3 3 0 0 0 4.24.24l1.5-1.5A3 3 0 0 0 7 2.5l-.86.85" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M8.5 6a3 3 0 0 0-4.24-.24l-1.5 1.5A3 3 0 0 0 7 11.5l.85-.85" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-          현재 페이지 URL 생성
-        </button>
-        <div class="url-result" id="url-result">
-          <input type="text" class="url-input" id="url-input" readonly placeholder="생성 버튼을 누르면 URL이 표시됩니다">
-          <button class="btn-url-copy" id="btn-url-copy" onclick="doCopyUrl()">복사</button>
-        </div>
+      <!-- URL 결과 (버튼은 banner-nav 로 이동 / URL 생성 후 표시) -->
+      <div class="url-result" id="url-result">
+        <input type="text" class="url-input" id="url-input" readonly placeholder="URL 생성 버튼을 누르면 여기에 표시됩니다">
+        <button class="btn-url-copy" id="btn-url-copy" onclick="doCopyUrl()">복사</button>
       </div>
     </div>
   </div>
@@ -1367,11 +1369,17 @@ PATH.B ~20%</textarea>
       e.dataTransfer.setData('text/plain', String(bannerIdx));
       /* requestAnimationFrame: Firefox에서 ghost image 생성 후 opacity 적용 */
       requestAnimationFrame(() => slotEl.classList.add('dragging'));
+      /* 드래그 중 + / − 버튼이 클릭 이벤트를 받지 않도록 포인터 이벤트 차단 */
+      document.querySelectorAll('.mp-btn-add, .mp-btn-remove').forEach(b => b.style.pointerEvents = 'none');
     };
     slotEl.ondragend = () => {
       slotEl.classList.remove('dragging');
       document.querySelectorAll('.mp-slot').forEach(s => s.classList.remove('drag-over'));
       dragSrcIdx = -1;
+      /* dragend 직후 click 이벤트까지 막으려면 지연 복원 필요 */
+      setTimeout(() => {
+        document.querySelectorAll('.mp-btn-add, .mp-btn-remove').forEach(b => b.style.pointerEvents = '');
+      }, 100);
     };
     slotEl.ondragover = e => {
       e.preventDefault();
