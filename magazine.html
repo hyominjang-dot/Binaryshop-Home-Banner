@@ -1060,20 +1060,34 @@
     reader.readAsDataURL(file);
   }
 
-  function loadImgFromUrl(key) {
+  async function loadImgFromUrl(key) {
     const el  = document.getElementById('url-' + key);
     const url = el ? el.value.trim() : '';
     if (!url) return;
+    /* fetch → data URL 변환: canvas 내보내기 시 CORS taint 방지 */
+    let storedSrc = url;
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        storedSrc = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result);
+          r.onerror = rej;
+          r.readAsDataURL(blob);
+        });
+      }
+    } catch (_) { /* CORS 미지원: URL 그대로 사용 */ }
     const proxyImg = new Image();
     proxyImg.onload = () => {
       if (Math.max(proxyImg.naturalWidth, proxyImg.naturalHeight) <= 200) {
         alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
         return;
       }
-      imgs[key] = url;
+      imgs[key] = storedSrc;
       const ub = document.getElementById('ub-' + key);
       if (ub) {
-        ub.style.backgroundImage    = `url(${url})`;
+        ub.style.backgroundImage    = `url(${storedSrc})`;
         ub.style.backgroundSize     = 'cover';
         ub.style.backgroundPosition = 'center';
         ub.classList.add('has-img');
@@ -1090,7 +1104,7 @@
       }
     };
     proxyImg.onerror = () => alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.');
-    proxyImg.src = url;
+    proxyImg.src = storedSrc;
   }
 
   function onPresetToggle(which) {
