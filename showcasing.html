@@ -60,45 +60,58 @@
     }
 
     /* ── Save Bar ── */
-    .save-bar-wrap { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    /* ── Save Bar ── */
+    .save-bar-wrap { flex-shrink: 0; }
     .save-bar {
       display: flex; align-items: center;
-      padding: 8px 12px; gap: 6px;
-      background: #fff;
+      padding: 12px 12px; gap: 6px;
+      background: #EFF6FF; border-bottom: 1px solid var(--border);
     }
+    .save-bar-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .save-disk-icon { flex-shrink: 0; }
+    .save-bar-textblock { min-width: 0; }
+    .save-notice-title { font-size: 12px; color: var(--black); }
+    .save-notice-title strong { font-weight: 700; }
+    .save-notice-sub { font-size: 10.5px; color: var(--gray3); margin-top: 1px; }
     .save-bar-btn {
-      display: flex; align-items: center; gap: 5px;
-      height: 30px; padding: 0 10px;
-      background: var(--gray1); border: 1px solid var(--border); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      height: 30px; padding: 0; width: 80px;
+      background: #fff; border: 1px solid var(--border); border-radius: 7px;
       font-size: 12px; font-weight: 600; font-family: var(--ff); color: var(--black);
       cursor: pointer; transition: background 0.15s; white-space: nowrap;
     }
     .save-bar-btn:hover { background: var(--gray2); }
-    .save-bar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .save-bar-btn.primary:hover { background: #2563EB; }
+    .save-bar-btn.continue { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .save-bar-btn.continue:hover { background: #2563EB; }
     .save-bar-spacer { flex: 1; }
     .save-count-badge {
       display: inline-flex; align-items: center; justify-content: center;
       width: 16px; height: 16px; margin-left: 1px;
-      background: var(--accent); color: #fff; border-radius: 50%;
+      background: rgba(255,255,255,0.28); color: #fff; border-radius: 50%;
       font-size: 10px; font-weight: 700;
     }
-    /* ── Save / Restore Dialog Panels ── */
-    .save-dialog-panel,
-    .restore-dialog-panel {
-      background: #F8FAFC; border-top: 1px solid var(--border); padding: 12px 14px;
+    /* ── Save / Restore Modals ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
     }
-    .sdp-hd {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+    .modal-box {
+      background: #fff; border-radius: 12px;
+      width: 300px; max-width: calc(100vw - 40px);
+      padding: 18px 18px 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.18);
     }
-    .sdp-title { font-size: 13px; font-weight: 700; color: var(--black); }
-    .sdp-close {
-      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    .modal-hd {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+    }
+    .modal-title { font-size: 14px; font-weight: 700; color: var(--black); }
+    .modal-close {
+      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
       background: none; border: none; cursor: pointer; color: var(--gray3);
-      font-size: 15px; border-radius: 4px; font-family: var(--ff); line-height: 1;
+      font-size: 16px; border-radius: 4px; font-family: var(--ff); line-height: 1;
     }
-    .sdp-close:hover { background: var(--gray2); color: var(--black); }
-    .sdp-label { font-size: 11px; font-weight: 600; color: var(--gray4); margin-bottom: 5px; display: block; }
+    .modal-close:hover { background: var(--gray2); color: var(--black); }
+    .sdp-label { font-size: 11px; font-weight: 600; color: var(--gray4); margin-bottom: 8px; display: block; }
     .sdp-hint { font-weight: 400; color: var(--gray3); }
     .sdp-input {
       width: 100%; height: 34px; padding: 0 10px;
@@ -239,8 +252,8 @@
     .upload-lbl { font-size: 12px; color: var(--gray3); font-weight: 500; pointer-events: none; }
     .upload-box.has-img .upload-lbl { display: none; }
 
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .toggle-label { font-size: 13px; font-weight: 500; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; min-height: 36px; margin-bottom: 10px; }
+    .toggle-label { font-size: 13px; font-weight: 500; line-height: 1; }
     .toggle { position: relative; width: 36px; height: 20px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-slider {
@@ -307,17 +320,17 @@
       z-index: 0;
     }
 
-    /* 상단 그라데이션 */
+    /* 상단 그라데이션 – Figma chrome에는 solid black statusbar bg 별도 존재 → HTML은 nav 가시성 위해 상단 dark 유지 */
     .cv-grad-top {
       position: absolute; top: 0; left: 0; right: 0; height: 660px;
       background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
       z-index: 1; pointer-events: none;
     }
 
-    /* 하단 그라데이션 */
+    /* 하단 그라데이션 – Figma: height=164px(1x)=492px(3x), stops: transparent→.1 15%→.5 65%→.75 */
     .cv-grad-bottom {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 1080px;
-      background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0) 100%);
+      position: absolute; bottom: 0; left: 0; right: 0; height: 492px;
+      background: linear-gradient(to top, rgba(0,0,0,0.749) 0%, rgba(0,0,0,0.502) 35%, rgba(0,0,0,0.1) 85%, rgba(0,0,0,0) 100%);
       z-index: 1; pointer-events: none;
     }
 
@@ -326,18 +339,21 @@
       position: absolute; top: 0; left: 0; right: 0;
       z-index: 2; pointer-events: none;
     }
+    /* Figma Statusbar: height=54px(1x)=162px(3x) */
     .cv-status {
-      height: 132px; display: flex; align-items: center; justify-content: space-between;
+      height: 162px; display: flex; align-items: flex-start; justify-content: space-between;
       padding: 36px 60px 0; color: #fff;
     }
     .cv-status-time { font-size: 45px; font-weight: 600; letter-spacing: -0.9px; }
     .cv-status-icons { display: flex; align-items: center; gap: 18px; }
+    /* Figma Nav: top=54px, height=44px(1x)=132px(3x); 쇼핑 left=22px(1x)=66px(3x) */
     .cv-nav {
-      height: 156px; display: flex; align-items: center; justify-content: space-between;
-      padding: 0 48px; color: #fff;
+      height: 132px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px 0 66px; color: #fff;
     }
     .cv-nav-left { display: flex; align-items: center; gap: 30px; }
-    .cv-nav-shop { font-size: 42px; font-weight: 400; opacity: 0.85; }
+    /* Figma 쇼핑: fontSize=15px(1x)=45px(3x), Bold(700), color=#eaedef */
+    .cv-nav-shop { font-size: 45px; font-weight: 700; color: #eaedef; }
     .cv-nav-brand { font-size: 51px; font-weight: 700; letter-spacing: -1.2px; }
     .cv-nav-right { display: flex; align-items: center; gap: 54px; }
 
@@ -360,11 +376,13 @@
       border-radius: 90px; letter-spacing: -0.9px; line-height: 48px;
       white-space: nowrap; z-index: 3; pointer-events: none;
     }
-    /* watermark: Figma 5px(1x)=15px(3x) from bottom & right */
+    /* watermark: Figma 5px(1x)=15px(3x) from bottom & right
+       z-index 0: 하단 그라데이션(z:1) 아래 → Figma 레이어 순서와 동일
+       font-weight 400: 27px→scale(1/3)=9px 렌더링 시 SemiBold(600)는 실제보다 두껍게 보임 */
     .cv-photo-by {
       position: absolute; bottom: 15px; right: 15px;
-      font-size: 27px; font-weight: 600; color: rgba(255,255,255,0.75);
-      z-index: 3; pointer-events: none;
+      font-size: 27px; font-weight: 400; color: #ffffff;
+      z-index: 0; pointer-events: none;
     }
 
     /* ── 모서리 리사이즈 핸들 (투명, 기능만 유지) ── */
@@ -409,9 +427,10 @@
     /* ── Logo safe-area guide (inside canvas, 3x coords) ── */
     .logo-safe-guide {
       position: absolute;
-      border: 2px dashed rgba(255,255,255,0.85);
+      background: rgba(59, 130, 246, 0.22);
+      border: 3px solid rgba(59, 130, 246, 0.9);
       border-radius: 50%;
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.4), inset 0 0 0 1px rgba(255,255,255,0.15);
       pointer-events: none; display: none; z-index: 9; transition: none;
     }
     /* ── Logo size slider ── */
@@ -433,7 +452,7 @@
     /* ── Banner Navigation ── */
     .banner-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 12px;
+      padding: 12px 12px;
       background: var(--panel); border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
@@ -460,8 +479,12 @@
     .action-divider {
       border: none; border-top: 1px solid var(--border); margin: 0 -20px;
     }
-    /* URL 결과 표시 영역 (생성 버튼은 banner-nav 로 이동) */
-    .url-result { display: none; gap: 6px; align-items: stretch; }
+    /* URL 결과 표시 영역 – banner-nav 바로 아래 */
+    .url-result {
+      display: none; gap: 6px; align-items: center;
+      padding: 8px 12px; flex-shrink: 0;
+      background: #fff; border-bottom: 1px solid var(--border);
+    }
     .url-result.show { display: flex; }
     .url-input {
       flex: 1; height: 36px; min-width: 0;
@@ -479,18 +502,18 @@
     .btn-url-copy.copied { background: #22a55b; }
     .bnav-right { display: flex; align-items: center; gap: 6px; }
     .bnav-exp, .bnav-url {
-      height: 26px; padding: 0 9px;
+      flex: 1; height: 30px; padding: 0 9px;
       background: #fff; color: var(--black);
       border: 1px solid var(--border); border-radius: 6px;
       font-size: 11px; font-weight: 600; font-family: var(--ff); cursor: pointer;
-      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+      display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap;
       transition: border-color 0.15s;
     }
     .bnav-exp:hover, .bnav-url:hover { border-color: #888; }
     .bnav-url:disabled { opacity: 0.5; cursor: wait; }
     .bnav-arrows { display: flex; align-items: center; gap: 6px; }
     .bnav-btn {
-      width: 26px; height: 26px;
+      width: 30px; height: 30px;
       background: var(--gray2); border: 1px solid var(--border);
       border-radius: 6px; font-size: 17px; font-family: var(--ff);
       color: var(--black); cursor: pointer; padding: 0; line-height: 1;
@@ -624,37 +647,24 @@
 
     <!-- 저장/불러오기 바 -->
     <div class="save-bar-wrap" id="save-bar-wrap">
-      <!-- 메인 버튼 바 (항상 표시) -->
       <div class="save-bar">
-        <button class="save-bar-btn primary" onclick="openSaveDialog()">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2.5A.5.5 0 012.5 2h6.793L11 3.707V10.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8z" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="7" width="5" height="4" rx=".4" stroke="currentColor" stroke-width="1.1"/><rect x="4" y="2" width="3.5" height="2.5" rx=".4" stroke="currentColor" stroke-width="1.1"/></svg>
-          임시저장
-        </button>
-        <div class="save-bar-spacer"></div>
-        <button class="save-bar-btn" id="btn-restore-slots" onclick="openRestoreDialog()">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5a4.5 4.5 0 104.5-4.5H5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 4.5L2.5 6.5 5 8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          불러오기
-          <span class="save-count-badge" id="save-count-badge" style="display:none">0</span>
-        </button>
-      </div>
-
-      <!-- 저장 다이얼로그 (저장하기 클릭 시 표시) -->
-      <div class="save-dialog-panel" id="save-dialog-panel" style="display:none">
-        <div class="sdp-hd">
-          <span class="sdp-title">임시저장</span>
-          <button class="sdp-close" onclick="closeSaveDialog()">✕</button>
+        <!-- 이전 작업 알림 (저장된 데이터 있을 때만 표시) -->
+        <div class="save-bar-info" id="save-notice" style="display:none">
+          <svg class="save-disk-icon" width="26" height="26" viewBox="0 0 30 30" fill="none">
+            <rect x="2" y="2" width="26" height="26" rx="4" fill="#3B82F6"/>
+            <rect x="5.5" y="2" width="15" height="10" rx="1.5" fill="white" fill-opacity="0.88"/>
+            <rect x="12" y="2.5" width="5" height="9" rx="1" fill="#60A5FA"/>
+            <rect x="5.5" y="14.5" width="19" height="11.5" rx="2" fill="white" fill-opacity="0.9"/>
+            <rect x="8" y="18" width="14" height="1.5" rx="0.75" fill="#BFDBFE"/>
+            <rect x="8" y="21" width="10" height="1.5" rx="0.75" fill="#BFDBFE"/>
+          </svg>
+          <div class="save-bar-textblock">
+            <div class="save-notice-title"><strong>이전 작업</strong>이 저장돼 있어요</div>
+            <div class="save-notice-sub" id="save-notice-sub"></div>
+          </div>
         </div>
-        <label class="sdp-label">임시저장 <span class="sdp-hint">· 슬롯을 클릭해서 저장</span></label>
-        <div class="save-slots-grid" id="save-slots-grid"></div>
-      </div>
-
-      <!-- 불러오기 다이얼로그 (불러오기 클릭 시 표시) -->
-      <div class="restore-dialog-panel" id="restore-dialog-panel" style="display:none">
-        <div class="sdp-hd">
-          <span class="sdp-title">불러오기</span>
-          <button class="sdp-close" onclick="closeRestoreDialog()">✕</button>
-        </div>
-        <div class="restore-slots-list" id="restore-slots-list"></div>
+        <button class="save-bar-btn" onclick="openSaveDialog()">임시저장</button>
+        <button class="save-bar-btn continue" id="btn-restore-slots" onclick="openRestoreDialog()">이어하기 →</button>
       </div>
     </div>
 
@@ -666,13 +676,6 @@
         <button class="bnav-btn" id="bnav-next" onclick="nextBanner()">&#8250;</button>
       </div>
       <div class="bnav-right">
-        <button class="bnav-exp" onclick="doExportCurrent()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M1 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-            <path d="M6 1v6M3.5 5l2.5 2.5L8.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          내보내기 (PNG)
-        </button>
         <button class="bnav-url" id="btn-url-gen" onclick="doGenUrl()">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M4.5 7a2.5 2.5 0 0 0 3.54.2l1.25-1.25A2.5 2.5 0 0 0 5.75 2.25l-.71.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -680,7 +683,20 @@
           </svg>
           URL 생성
         </button>
+        <button class="bnav-exp" onclick="doExportCurrent()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M6 1v6M3.5 5l2.5 2.5L8.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          내보내기 (PNG)
+        </button>
       </div>
+    </div>
+
+    <!-- URL 결과: banner-nav 바로 아래 표시 -->
+    <div class="url-result" id="url-result">
+      <input type="text" class="url-input" id="url-input" readonly placeholder="URL 생성 버튼을 누르면 여기에 표시됩니다">
+      <button class="btn-url-copy" id="btn-url-copy" onclick="doCopyUrl()">복사</button>
     </div>
 
     <div class="panel-scroll">
@@ -837,14 +853,8 @@ PATH.B ~20%</textarea>
 
       <hr class="action-divider">
 
-      <!-- 한번에 내보내기 ZIP (전체 폭) -->
-      <button class="btn-exp" style="width:100%;flex:none" onclick="doExportAll()">한번에 내보내기 (ZIP)</button>
-
-      <!-- URL 결과 (버튼은 banner-nav 로 이동 / URL 생성 후 표시) -->
-      <div class="url-result" id="url-result">
-        <input type="text" class="url-input" id="url-input" readonly placeholder="URL 생성 버튼을 누르면 여기에 표시됩니다">
-        <button class="btn-url-copy" id="btn-url-copy" onclick="doCopyUrl()">복사</button>
-      </div>
+      <!-- 한 번에 내보내기 ZIP (전체 폭) -->
+      <button class="btn-exp" style="width:100%;flex:none" onclick="doExportAll()">한 번에 내보내기 (ZIP)</button>
     </div>
   </div>
 
@@ -865,7 +875,7 @@ PATH.B ~20%</textarea>
           <div class="cv-grad-bottom" id="cv-grad-btm"></div>
 
           <!-- Layer 1.5: 유저명 (그라데이션 위, UI 미리보기 아래) -->
-          <div class="cv-photo-by" id="cv-photo-by" style="display:none">Photo by. </div>
+          <div class="cv-photo-by" id="cv-photo-by" style="display:none">Photo by </div>
 
           <!-- Layer 2: App Chrome -->
           <div class="cv-chrome">
@@ -912,7 +922,7 @@ PATH.B ~20%</textarea>
             </div>
           </div>
 
-          <!-- 로고 안전 영역 가이드 (Figma 3x: 769.5,384 294×123) -->
+          <!-- 로고 안전 영역 가이드 (LOGO_GUIDE 상수와 동일: 3x 769.5,384 294×123) -->
           <div class="logo-safe-guide" id="logo-guide-sc" style="left:769.5px;top:384px;width:294px;height:123px;"></div>
 
           <!-- Layer 2-a: 집요한세일 프리셋 로고 (Figma 3x: 769.5,384 294×70) -->
@@ -1195,6 +1205,10 @@ PATH.B ~20%</textarea>
     /* ensure thumb strip page shows the target banner */
     const pg = Math.floor(idx / 5);
     if (pg !== thumbPage) thumbPage = pg;
+    /* URL 결과 초기화: 다른 배너로 이동 시 기존 URL 숨김 */
+    const urlResult = document.getElementById('url-result');
+    if (urlResult) urlResult.classList.remove('show');
+    if (_genBlobUrl) { URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
     loadBanner(idx);
     updateBannerNav();
     renderThumbStrip();
@@ -1379,7 +1393,7 @@ PATH.B ~20%</textarea>
     if (b.wmOn) {
       const wm = document.createElement('div');
       wm.className = 'cv-photo-by';
-      wm.textContent = `Photo by. ${b.wmName || ''}`;
+      wm.textContent = `Photo by ${b.wmName || ''}`;
       mc.appendChild(wm);
     }
 
@@ -1776,11 +1790,11 @@ PATH.B ~20%</textarea>
   function showLogoGuideSc() {
     const g = document.getElementById('logo-guide-sc');
     if (!g || !logoScDataUrl) return;
-    /* 가이드 타원을 현재 로고 실제 좌표에 맞게 위치/크기 갱신 */
-    g.style.left   = logoScX + 'px';
-    g.style.top    = logoScY + 'px';
-    g.style.width  = logoScW + 'px';
-    g.style.height = logoScH + 'px';
+    /* 가이드는 LOGO_GUIDE 고정 영역 표시 – 로고 크기/위치와 무관하게 항상 고정 */
+    g.style.left   = LOGO_GUIDE.x + 'px';
+    g.style.top    = LOGO_GUIDE.y + 'px';
+    g.style.width  = LOGO_GUIDE.w + 'px';
+    g.style.height = LOGO_GUIDE.h + 'px';
     g.style.display = 'block';
   }
   function hideLogoGuideAfterSc(ms) {
@@ -1844,7 +1858,7 @@ PATH.B ~20%</textarea>
     const wmOn   = document.getElementById('f-wm-on').checked;
     const wmEl   = document.getElementById('cv-photo-by');
     wmEl.style.display = wmOn ? '' : 'none';
-    if (wmOn) wmEl.textContent = `Photo by. ${document.getElementById('f-wm-name')?.value || ''}`;
+    if (wmOn) wmEl.textContent = `Photo by ${document.getElementById('f-wm-name')?.value || ''}`;
 
     /* update active thumbnail to reflect current state */
     if (BANNERS.length > 0) updateActiveThumb();
@@ -1885,12 +1899,12 @@ PATH.B ~20%</textarea>
     }
 
     if (b.wmOn) {
-      /* Figma 기준: 우측 5px(1x)=15px(3x), 하단 5px(1x)=15px(3x) */
-      ctx.font         = '600 27px "Pretendard Variable", Pretendard, sans-serif';
-      ctx.fillStyle    = 'rgba(255,255,255,0.75)';
+      /* Figma 기준: 우측 5px(1x)=15px(3x), 하단 5px(1x)=15px(3x), color=#ffffff, weight 400 */
+      ctx.font         = '400 27px "Pretendard Variable", Pretendard, sans-serif';
+      ctx.fillStyle    = '#ffffff';
       ctx.textAlign    = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`Photo by. ${b.wmName || ''}`, CW - 15, CH - 15);
+      ctx.fillText(`Photo by ${b.wmName || ''}`, CW - 15, CH - 15);
     }
 
     return out;
@@ -2145,16 +2159,37 @@ PATH.B ~20%</textarea>
     return { slots: [null, null] };
   }
 
-  /* 저장 개수 뱃지 업데이트 */
+  /* 저장 개수 뱃지 + 이전 작업 알림 업데이트 */
   function updateSaveCountBadge() {
     const manualMeta  = getManualMeta();
     const manualCount = manualMeta.slots.filter(Boolean).length;
     const autoMeta    = JSON.parse(localStorage.getItem(LS_META) || 'null');
     const total = manualCount + (autoMeta?.savedAt ? 1 : 0);
     const badge = document.getElementById('save-count-badge');
-    if (!badge) return;
-    badge.textContent  = total;
-    badge.style.display = total > 0 ? '' : 'none';
+    if (badge) {
+      badge.textContent  = total;
+      badge.style.display = total > 0 ? '' : 'none';
+    }
+    /* 이전 작업 알림 */
+    const notice    = document.getElementById('save-notice');
+    const noticeSub = document.getElementById('save-notice-sub');
+    if (notice && noticeSub) {
+      if (total > 0) {
+        let latestAt = null, latestCount = 0;
+        if (autoMeta?.savedAt) { latestAt = autoMeta.savedAt; latestCount = autoMeta.count || 0; }
+        manualMeta.slots.forEach(s => {
+          if (s && (!latestAt || new Date(s.savedAt) > new Date(latestAt))) {
+            latestAt = s.savedAt; latestCount = s.count || latestCount;
+          }
+        });
+        const d  = new Date(latestAt);
+        const ds = d.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        noticeSub.textContent = (latestCount ? `배너 ${latestCount}개 · ` : '') + ds;
+        notice.style.display = '';
+      } else {
+        notice.style.display = 'none';
+      }
+    }
   }
 
   /* HTML 이스케이프 */
@@ -2162,14 +2197,14 @@ PATH.B ~20%</textarea>
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ── 저장 다이얼로그 ── */
+  /* ── 저장 모달 ── */
   function openSaveDialog() {
     closeRestoreDialog();
     renderSaveSlots();
-    document.getElementById('save-dialog-panel').style.display = '';
+    document.getElementById('save-modal-overlay').style.display = '';
   }
   function closeSaveDialog() {
-    document.getElementById('save-dialog-panel').style.display = 'none';
+    document.getElementById('save-modal-overlay').style.display = 'none';
   }
 
   function renderSaveSlots() {
@@ -2222,14 +2257,14 @@ PATH.B ~20%</textarea>
     }
   }
 
-  /* ── 불러오기 다이얼로그 ── */
+  /* ── 이어하기 모달 ── */
   function openRestoreDialog() {
     closeSaveDialog();
     renderRestoreSlots();
-    document.getElementById('restore-dialog-panel').style.display = '';
+    document.getElementById('restore-modal-overlay').style.display = '';
   }
   function closeRestoreDialog() {
-    document.getElementById('restore-dialog-panel').style.display = 'none';
+    document.getElementById('restore-modal-overlay').style.display = 'none';
   }
 
   function renderRestoreSlots() {
@@ -2391,5 +2426,28 @@ PATH.B ~20%</textarea>
     }, 600);
   }
 </script>
+
+<!-- 임시저장 모달 -->
+<div class="modal-overlay" id="save-modal-overlay" style="display:none" onclick="if(event.target===this)closeSaveDialog()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">임시저장</span>
+      <button class="modal-close" onclick="closeSaveDialog()">✕</button>
+    </div>
+    <label class="sdp-label">슬롯을 클릭해서 저장<span class="sdp-hint"> · 최대 2개</span></label>
+    <div class="save-slots-grid" id="save-slots-grid"></div>
+  </div>
+</div>
+
+<!-- 이어하기 모달 -->
+<div class="modal-overlay" id="restore-modal-overlay" style="display:none" onclick="if(event.target===this)closeRestoreDialog()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">이어하기</span>
+      <button class="modal-close" onclick="closeRestoreDialog()">✕</button>
+    </div>
+    <div class="restore-slots-list" id="restore-slots-list"></div>
+  </div>
+</div>
 </body>
 </html>
