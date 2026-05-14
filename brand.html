@@ -1168,30 +1168,46 @@
       if (_genBlobUrl) { if (_genBlobUrl.startsWith('blob:')) URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
       const blob = await new Promise(r => out.toBlob(r, 'image/png'));
 
-      /* 이미지 호스팅 업로드 → 공개 URL 획득
-         catbox.moe → 0x0.st 순으로 시도, 모두 실패 시 로컬 blob URL 폴백 */
+      /* GitHub API 업로드 → raw.githubusercontent.com 공개 URL
+         토큰 최초 입력 시 localStorage 저장, 이후 자동 사용 */
       btn.textContent = '업로드 중...';
-      let publicUrl = null;
-      try {
-        const fd = new FormData();
-        fd.append('reqtype', 'fileupload');
-        fd.append('fileToUpload', blob, 'banner.png');
-        const resp = await fetch('https://catbox.moe/user/api.php', {
-          method: 'POST', body: fd, signal: AbortSignal.timeout(15000)
-        });
-        if (resp.ok) { const t = (await resp.text()).trim(); if (t.startsWith('http')) publicUrl = t; }
-      } catch (_) {}
-      if (!publicUrl) {
-        try {
-          const fd = new FormData();
-          fd.append('file', blob, 'banner.png');
-          const resp = await fetch('https://0x0.st', {
-            method: 'POST', body: fd, signal: AbortSignal.timeout(15000)
-          });
-          if (resp.ok) { const t = (await resp.text()).trim(); if (t.startsWith('http')) publicUrl = t; }
-        } catch (_) {}
+      const GH_REPO = 'hyominjang-dot/Binaryshop-Home-Banner';
+      let ghToken = localStorage.getItem('gh_upload_token');
+      if (!ghToken) {
+        ghToken = (window.prompt(
+          '공개 URL 생성에 GitHub Token이 필요합니다.\n\n' +
+          '발급: GitHub → Settings → Developer settings\n' +
+          '→ Personal access tokens → Fine-grained tokens\n' +
+          '→ Repository: ' + GH_REPO + '\n' +
+          '→ Permissions: Contents → Read and write\n\n' +
+          '토큰을 입력하세요:'
+        ) || '').trim();
+        if (!ghToken) return;
+        localStorage.setItem('gh_upload_token', ghToken);
       }
-      if (!publicUrl) publicUrl = URL.createObjectURL(blob);
+      const ghBase64 = await new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result.split(',')[1]);
+        r.readAsDataURL(blob);
+      });
+      const ghFile = 'banner_' + Date.now() + '.png';
+      const ghResp = await fetch(
+        'https://api.github.com/repos/' + GH_REPO + '/contents/uploads/' + ghFile,
+        {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + ghToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Upload ' + ghFile, content: ghBase64 }),
+          signal: AbortSignal.timeout(30000)
+        }
+      );
+      if (ghResp.status === 401) {
+        localStorage.removeItem('gh_upload_token');
+        alert('GitHub 토큰이 유효하지 않습니다. 다시 시도하면 재입력할 수 있습니다.');
+        return;
+      }
+      if (!ghResp.ok) throw new Error('GitHub 업로드 실패: HTTP ' + ghResp.status);
+      const ghData = await ghResp.json();
+      const publicUrl = ghData.content.download_url;
       _genBlobUrl = publicUrl;
       const input = document.getElementById('url-input');
       input.value = publicUrl;
