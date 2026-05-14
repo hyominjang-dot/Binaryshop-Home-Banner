@@ -1165,11 +1165,36 @@
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
       ctx.fillRect(0, 0, CW, CH);
 
-      if (_genBlobUrl) { URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
+      if (_genBlobUrl) { if (_genBlobUrl.startsWith('blob:')) URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
       const blob = await new Promise(r => out.toBlob(r, 'image/png'));
-      _genBlobUrl = URL.createObjectURL(blob);
+
+      /* 이미지 호스팅 업로드 → 공개 URL 획득
+         catbox.moe → 0x0.st 순으로 시도, 모두 실패 시 로컬 blob URL 폴백 */
+      btn.textContent = '업로드 중...';
+      let publicUrl = null;
+      try {
+        const fd = new FormData();
+        fd.append('reqtype', 'fileupload');
+        fd.append('fileToUpload', blob, 'banner.png');
+        const resp = await fetch('https://catbox.moe/user/api.php', {
+          method: 'POST', body: fd, signal: AbortSignal.timeout(15000)
+        });
+        if (resp.ok) { const t = (await resp.text()).trim(); if (t.startsWith('http')) publicUrl = t; }
+      } catch (_) {}
+      if (!publicUrl) {
+        try {
+          const fd = new FormData();
+          fd.append('file', blob, 'banner.png');
+          const resp = await fetch('https://0x0.st', {
+            method: 'POST', body: fd, signal: AbortSignal.timeout(15000)
+          });
+          if (resp.ok) { const t = (await resp.text()).trim(); if (t.startsWith('http')) publicUrl = t; }
+        } catch (_) {}
+      }
+      if (!publicUrl) publicUrl = URL.createObjectURL(blob);
+      _genBlobUrl = publicUrl;
       const input = document.getElementById('url-input');
-      input.value = _genBlobUrl;
+      input.value = publicUrl;
       document.getElementById('url-result').classList.add('show');
       input.select();
     } catch (e) {
