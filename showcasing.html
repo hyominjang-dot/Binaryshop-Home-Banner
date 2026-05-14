@@ -1544,26 +1544,29 @@ PATH.B ~20%</textarea>
     const restore = () => { if (btn) { btn.disabled = false; btn.textContent = '적용'; } };
 
     /* fetch → data URL 변환 (canvas taint 방지)
-       직접 fetch → corsproxy.io → allorigins.win 순으로 자동 시도 */
+       직접 + 3개 프록시(corsproxy / allorigins / wsrv) 동시 시도
+       → Promise.any: 가장 먼저 성공한 결과 채택 */
     const toDataUrl = blob => new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = e => res(e.target.result);
       r.onerror = rej;
       r.readAsDataURL(blob);
     });
-    const tryFetch = async (fetchUrl) => {
-      const resp = await fetch(fetchUrl, { signal: AbortSignal.timeout(6000) });
+    const tryOne = async (fetchUrl) => {
+      const resp = await fetch(fetchUrl, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      return toDataUrl(await resp.blob());
+      const blob = await resp.blob();
+      if (!blob.size) throw new Error('empty');
+      return toDataUrl(blob);
     };
-    let storedSrc;
-    try { storedSrc = await tryFetch(url); } catch (_) {}
-    if (!storedSrc) {
-      try { storedSrc = await tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)); } catch (_) {}
-    }
-    if (!storedSrc) {
-      try { storedSrc = await tryFetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); } catch (_) {}
-    }
+    const enc  = encodeURIComponent(url);
+    const bare = encodeURIComponent(url.replace(/^https?:\/\//, ''));
+    const storedSrc = await Promise.any([
+      tryOne(url),
+      tryOne('https://corsproxy.io/?' + enc),
+      tryOne('https://api.allorigins.win/raw?url=' + enc),
+      tryOne('https://wsrv.nl/?url=' + bare),
+    ]).catch(() => null);
     if (!storedSrc) {
       restore();
       alert('이미지 URL을 불러올 수 없습니다.\n이미지 파일로 직접 업로드해주세요.');
