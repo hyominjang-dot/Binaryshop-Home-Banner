@@ -940,36 +940,40 @@
     const el  = document.getElementById('url-' + key);
     const url = el ? el.value.trim() : '';
     if (!url) return;
-    /* fetch → data URL 변환: canvas 내보내기 시 CORS taint 방지
-       1단계: 직접 fetch (CORS 허용 서버)
-       2단계: CORS 프록시 경유 (직접 접근 차단 시 자동 우회)
-       3단계: 모두 실패 시 파일 업로드 안내 */
+    /* 버튼 로딩 상태 */
+    const btn = el ? el.nextElementSibling : null;
+    if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+    const restore = () => { if (btn) { btn.disabled = false; btn.textContent = '적용'; } };
+
+    /* fetch → data URL 변환 (canvas taint 방지)
+       직접 fetch → corsproxy.io → allorigins.win 순으로 자동 시도 */
     const toDataUrl = blob => new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = e => res(e.target.result);
       r.onerror = rej;
       r.readAsDataURL(blob);
     });
+    const tryFetch = async (fetchUrl) => {
+      const resp = await fetch(fetchUrl, { signal: AbortSignal.timeout(6000) });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return toDataUrl(await resp.blob());
+    };
     let storedSrc;
-    /* 1. 직접 fetch */
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) storedSrc = await toDataUrl(await resp.blob());
-    } catch (_) {}
-    /* 2. CORS 프록시 경유 */
+    try { storedSrc = await tryFetch(url); } catch (_) {}
     if (!storedSrc) {
-      try {
-        const proxyResp = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
-        if (proxyResp.ok) storedSrc = await toDataUrl(await proxyResp.blob());
-      } catch (_) {}
+      try { storedSrc = await tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)); } catch (_) {}
     }
-    /* 3. 모두 실패 */
     if (!storedSrc) {
+      try { storedSrc = await tryFetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); } catch (_) {}
+    }
+    if (!storedSrc) {
+      restore();
       alert('이미지 URL을 불러올 수 없습니다.\n이미지 파일로 직접 업로드해주세요.');
       return;
     }
     const proxyImg = new Image();
     proxyImg.onload = () => {
+      restore();
       if (Math.max(proxyImg.naturalWidth, proxyImg.naturalHeight) <= 200) {
         alert('이미지 사이즈가 너무 작습니다.\n가로 또는 세로 최대 길이가 200px를 초과하는 이미지를 사용해주세요.');
         return;
@@ -993,7 +997,7 @@
         rp();
       }
     };
-    proxyImg.onerror = () => alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.');
+    proxyImg.onerror = () => { restore(); alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.'); };
     proxyImg.src = storedSrc;
   }
 
