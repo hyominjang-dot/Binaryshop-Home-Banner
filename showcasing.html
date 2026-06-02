@@ -210,6 +210,25 @@
       transition: transform 0.2s;
     }
     .sec-arr.open { transform: rotate(180deg); }
+    /* ── 회전 핸들 ── */
+    .rot-stem {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: -28px; width: 1px; height: 24px;
+      background: #1b6ef3; pointer-events: none;
+    }
+    .rot-btn {
+      position: absolute; left: 50%; top: -52px;
+      transform: translateX(-50%);
+      width: 22px; height: 22px;
+      background: #fff; border: 1.5px solid #1b6ef3; border-radius: 50%;
+      cursor: grab; pointer-events: all;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #1b6ef3; user-select: none; z-index: 25;
+    }
+    .rot-btn:hover { background: #EFF6FF; }
+    .rot-btn:active { cursor: grabbing; }
+    /* ── 배경 이미지 엘리먼트 ── */
+    #cv-bg-img { position: absolute; pointer-events: none; transform-origin: center center; }
     .sec-bd { display: none; padding: 16px; background: #fff; border-top: 1px solid var(--border); }
     .sec-bd.open { display: block; }
 
@@ -869,7 +888,7 @@ PATH.B ~20%</textarea>
         <div id="canvas">
 
           <!-- Layer 0: 배경 -->
-          <div class="cv-bg" id="cv-bg"></div>
+          <div class="cv-bg" id="cv-bg"><img id="cv-bg-img" alt=""></div>
 
           <!-- Layer 1: 그라데이션 -->
           <div class="cv-grad-top"    id="cv-grad-top"></div>
@@ -948,6 +967,8 @@ PATH.B ~20%</textarea>
       </div>
         <div id="sel-overlay">
           <div class="sel-border-inner"></div>
+          <div class="rot-stem"></div>
+          <div class="rot-btn rh" id="rot-handle" title="드래그: 회전 / 더블클릭: 초기화">↻</div>
           <div class="sel-h rh sel-tl" id="rh-tl" data-corner="tl"></div>
           <div class="sel-h rh sel-tr" id="rh-tr" data-corner="tr"></div>
           <div class="sel-h rh sel-bl" id="rh-bl" data-corner="bl"></div>
@@ -1009,6 +1030,8 @@ PATH.B ~20%</textarea>
 
   let imgs = {}; /* let (was const) – reassigned on banner switch */
   let bgW = 0, bgH = 0, bgX = 0, bgY = 0;
+  let bgAngle = 0;  /* 회전 각도 (degrees) */
+  let isRotating = false, rotCenter = {x:0,y:0}, rotStartAngle = 0, rotBgAngle0 = 0;
   let natAspect = 1; /* natH / natW */
   let minBgW = CW;
 
@@ -1075,7 +1098,7 @@ PATH.B ~20%</textarea>
 
   function createBanner() {
     return {
-      imgs: {}, bgW: 0, bgH: 0, bgX: 0, bgY: 0,
+      imgs: {}, bgW: 0, bgH: 0, bgX: 0, bgY: 0, bgAngle: 0,
       natAspect: 1, minBgW: CW,
       logoScDataUrl: null,
       logoScX: LOGO_GUIDE.x, logoScY: LOGO_GUIDE.y,
@@ -1099,6 +1122,7 @@ PATH.B ~20%</textarea>
     /* live state vars */
     b.imgs = Object.assign({}, imgs);
     b.bgW = bgW; b.bgH = bgH; b.bgX = bgX; b.bgY = bgY;
+    b.bgAngle = bgAngle;
     b.natAspect = natAspect; b.minBgW = minBgW;
     b.logoScDataUrl = logoScDataUrl;
     b.logoScX = logoScX; b.logoScY = logoScY;
@@ -1127,6 +1151,7 @@ PATH.B ~20%</textarea>
     /* restore live state vars */
     imgs = Object.assign({}, b.imgs);
     bgW = b.bgW; bgH = b.bgH; bgX = b.bgX; bgY = b.bgY;
+    bgAngle = b.bgAngle || 0;
     natAspect = b.natAspect; minBgW = b.minBgW;
     logoScDataUrl = b.logoScDataUrl;
     logoScX = b.logoScX; logoScY = b.logoScY;
@@ -1614,6 +1639,7 @@ PATH.B ~20%</textarea>
 
   /* 이미지가 캔버스를 항상 꽉 채우도록 제한 */
   function clampBg() {
+    if (Math.abs(bgAngle) > 0.5) return; /* 회전 중: 클램프 해제 */
     bgX = Math.min(0, Math.max(CW - bgW, bgX));
     bgY = Math.min(0, Math.max(CH - bgH, bgY));
   }
@@ -1629,11 +1655,14 @@ PATH.B ~20%</textarea>
     ov.style.height = (bgH * DS) + 'px';
   }
   function applyBg() {
-    const cvBg = document.getElementById('cv-bg');
-    if (!imgs['bg']) return;
-    cvBg.style.backgroundImage    = `url(${imgs['bg']})`;
-    cvBg.style.backgroundSize     = `${bgW}px ${bgH}px`;
-    cvBg.style.backgroundPosition = `${bgX}px ${bgY}px`;
+    const bgImg = document.getElementById('cv-bg-img');
+    if (!imgs['bg'] || !bgImg) return;
+    bgImg.src            = imgs['bg'];
+    bgImg.style.width    = bgW + 'px';
+    bgImg.style.height   = bgH + 'px';
+    bgImg.style.left     = bgX + 'px';
+    bgImg.style.top      = bgY + 'px';
+    bgImg.style.transform = `rotate(${bgAngle}deg)`;
   }
 
   /* ── Interaction (drag + corner resize) ── */
@@ -1702,6 +1731,13 @@ PATH.B ~20%</textarea>
         applyBg(); updateSel();
       }
 
+      if (isRotating) {
+        const cur = Math.atan2(e.clientY - rotCenter.y, e.clientX - rotCenter.x) * 180 / Math.PI;
+        bgAngle = rotBgAngle0 + (cur - rotStartAngle);
+        applyBg(); updateSel();
+        if (BANNERS.length > 0) updateActiveThumb();
+      }
+
       /* update active thumbnail after any bg change */
       if ((isDragging || isResizing) && BANNERS.length > 0) updateActiveThumb();
     });
@@ -1712,7 +1748,27 @@ PATH.B ~20%</textarea>
         document.getElementById('canvas').classList.remove('dragging');
       }
       isResizing = false;
+      isRotating = false;
     });
+
+    /* ── 회전 핸들 ── */
+    const rotHandle = document.getElementById('rot-handle');
+    if (rotHandle) {
+      rotHandle.addEventListener('mousedown', e => {
+        isRotating = true;
+        const wrap = document.getElementById('canvas-sel-wrap');
+        const wr = wrap.getBoundingClientRect();
+        rotCenter = { x: wr.left + (bgX + bgW/2) * DS, y: wr.top + (bgY + bgH/2) * DS };
+        rotBgAngle0 = bgAngle;
+        rotStartAngle = Math.atan2(e.clientY - rotCenter.y, e.clientX - rotCenter.x) * 180 / Math.PI;
+        e.stopPropagation(); e.preventDefault();
+      });
+      rotHandle.addEventListener('dblclick', e => {
+        bgAngle = 0; clampBg(); applyBg(); updateSel();
+        if (BANNERS.length > 0) updateActiveThumb();
+        e.stopPropagation();
+      });
+    }
   }
 
   /* ── 13자 제한 (단일 input용) ── */
@@ -1879,7 +1935,7 @@ PATH.B ~20%</textarea>
   /* ── Render ── */
   function rp() {
     if (imgs['bg']) { applyBg(); updateSel(); }
-    else document.getElementById('cv-bg').style.backgroundImage = '';
+    else { const bgImg = document.getElementById('cv-bg-img'); if (bgImg) bgImg.src = ''; }
 
     const gradOn = document.getElementById('f-grad-on').checked;
     document.getElementById('cv-grad-top').style.display = gradOn ? '' : 'none';
@@ -1918,7 +1974,16 @@ PATH.B ~20%</textarea>
     const img = new Image();
     img.src = b.imgs['bg'];
     await new Promise(resolve => { img.onload = resolve; if (img.complete) resolve(); });
-    ctx.drawImage(img, b.bgX, b.bgY, b.bgW, b.bgH);
+    const _angle = (b.bgAngle || 0) * Math.PI / 180;
+    if (_angle === 0) {
+      ctx.drawImage(img, b.bgX, b.bgY, b.bgW, b.bgH);
+    } else {
+      ctx.save();
+      ctx.translate(b.bgX + b.bgW / 2, b.bgY + b.bgH / 2);
+      ctx.rotate(_angle);
+      ctx.drawImage(img, -b.bgW / 2, -b.bgH / 2, b.bgW, b.bgH);
+      ctx.restore();
+    }
 
     if (b.presetJyOn) {
       const pImg = new Image();
