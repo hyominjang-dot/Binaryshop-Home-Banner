@@ -429,7 +429,22 @@
     #sel-overlay {
       position: absolute; display: none;
       pointer-events: none; z-index: 20;
+      opacity: 0; transition: opacity 0.4s ease;
     }
+    #sel-overlay.sel-visible { opacity: 1; }
+    #sel-overlay:not(.sel-visible) .sel-h.rh,
+    #sel-overlay:not(.sel-visible) .rot-zone { pointer-events: none !important; }
+    /* ── 회전 존 (코너 바깥 영역) ── */
+    .rot-zone {
+      position: absolute; width: 28px; height: 28px;
+      background: transparent; pointer-events: all;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='9' fill='white' fill-opacity='0.85'/%3E%3Ctext x='2' y='18' font-size='16' font-family='system-ui'%3E%E2%86%BB%3C/text%3E%3C/svg%3E") 11 11, crosshair;
+    }
+    /* 코너 리사이즈 핸들(-4~+4px)과 충분히 떨어뜨려 선택이 쉽도록 바깥쪽으로 배치 */
+    .rot-zone-tl { top: -34px; left: -34px; }
+    .rot-zone-tr { top: -34px; right: -34px; }
+    .rot-zone-bl { bottom: -34px; left: -34px; }
+    .rot-zone-br { bottom: -34px; right: -34px; }
     .sel-border-inner {
       position: absolute; inset: 0;
       border: 2px solid #1b6ef3; pointer-events: none;
@@ -503,7 +518,7 @@
   <div class="panel">
     <!-- Topbar -->
     <div class="topbar">
-      <a class="topbar-back" href="index.html">
+      <a class="topbar-back" href="../">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         홈으로
       </a>
@@ -711,8 +726,10 @@
         </div>
         <div id="sel-overlay">
           <div class="sel-border-inner"></div>
-          <div class="rot-stem"></div>
-          <div class="rot-btn rh" id="rot-handle" title="드래그: 회전 / 더블클릭: 초기화">↻</div>
+          <div class="rot-zone rot-zone-tl"></div>
+          <div class="rot-zone rot-zone-tr"></div>
+          <div class="rot-zone rot-zone-bl"></div>
+          <div class="rot-zone rot-zone-br"></div>
           <div class="sel-h rh sel-tl" id="rh-tl" data-corner="tl"></div>
           <div class="sel-h rh sel-tr" id="rh-tr" data-corner="tr"></div>
           <div class="sel-h rh sel-bl" id="rh-bl" data-corner="bl"></div>
@@ -733,7 +750,7 @@
       </div><!-- /.mag-section -->
 
       <div class="preview-label">276 × 182px · 출력 828 × 546px</div>
-      <div style="font-size:11px; color:var(--gray3); margin-top:-6px;">사진 이동 및 모서리 드래그로 확대 가능</div>
+      <div style="font-size:11px; color:var(--gray3); margin-top:-6px;">사진 이동 · 모서리 바깥 드래그로 회전 · 모서리 핸들로 확대</div>
     </div>
   </div>
 
@@ -1074,7 +1091,7 @@
           minBgW    = Math.max(CW, CH / natAspect);
           initBgCover(img.naturalWidth, img.naturalHeight);
           document.getElementById('canvas').classList.add('has-img');
-          updateSel();
+          updateSel(); showHandlesWithTimer();
           rp();
         };
         img.src = e.target.result;
@@ -1143,7 +1160,7 @@
         minBgW    = Math.max(CW, CH / natAspect);
         initBgCover(proxyImg.naturalWidth, proxyImg.naturalHeight);
         document.getElementById('canvas').classList.add('has-img');
-        updateSel();
+        updateSel(); showHandlesWithTimer();
         rp();
       } else {
         rp();
@@ -1306,10 +1323,43 @@
     clampBg();
   }
 
+  /* 회전 각도에서 캔버스 4구석을 커버하기 위한 최소 크기로 자동 확대 */
+  function ensureBgCoversCanvas() {
+    const rad  = bgAngle * Math.PI / 180;
+    const cosR = Math.abs(Math.cos(rad));
+    const sinR = Math.abs(Math.sin(rad));
+    const needW = Math.max(CW * cosR + CH * sinR,
+                           (CW * sinR + CH * cosR) / natAspect);
+    if (bgW < needW) {
+      const cx = bgX + bgW / 2;
+      const cy = bgY + bgH / 2;
+      bgW = needW;
+      bgH = needW * natAspect;
+      bgX = cx - bgW / 2;
+      bgY = cy - bgH / 2;
+    }
+  }
+
   function clampBg() {
-    if (Math.abs(bgAngle) > 0.5) return;
-    bgX = Math.min(0, Math.max(CW - bgW, bgX));
-    bgY = Math.min(0, Math.max(CH - bgH, bgY));
+    /* 회전된 이미지 사각형이 캔버스 4구석을 모두 덮도록 중심을 제한
+       (bounding-box 근사가 아니라 정확한 모서리 포함 검사) */
+    const rad = bgAngle * Math.PI / 180;
+    const c = Math.cos(rad), s = Math.sin(rad);
+    const corners = [[0, 0], [CW, 0], [0, CH], [CW, CH]];
+    const p1 = corners.map(([x, y]) =>  x * c + y * s);
+    const p2 = corners.map(([x, y]) => -x * s + y * c);
+    const cx = bgX + bgW / 2;
+    const cy = bgY + bgH / 2;
+    let s1 =  cx * c + cy * s;
+    let s2 = -cx * s + cy * c;
+    const lo1 = Math.max(...p1) - bgW / 2, hi1 = Math.min(...p1) + bgW / 2;
+    const lo2 = Math.max(...p2) - bgH / 2, hi2 = Math.min(...p2) + bgH / 2;
+    s1 = lo1 <= hi1 ? Math.min(hi1, Math.max(lo1, s1)) : (lo1 + hi1) / 2;
+    s2 = lo2 <= hi2 ? Math.min(hi2, Math.max(lo2, s2)) : (lo2 + hi2) / 2;
+    const ncx = s1 * c - s2 * s;
+    const ncy = s1 * s + s2 * c;
+    bgX = ncx - bgW / 2;
+    bgY = ncy - bgH / 2;
   }
 
 
@@ -1323,6 +1373,8 @@
     ov.style.top    = (bgY * DS) + 'px';
     ov.style.width  = (bgW * DS) + 'px';
     ov.style.height = (bgH * DS) + 'px';
+    ov.style.transform       = bgAngle ? `rotate(${bgAngle}deg)` : '';
+    ov.style.transformOrigin = '50% 50%';
   }
   function applyBg() {
     const bgImg = document.getElementById('cv-bg-img');
@@ -1335,12 +1387,33 @@
     bgImg.style.transform = `rotate(${bgAngle}deg)`;
   }
 
+  /* ── 핸들 자동 숨김 ── */
+  let selHideTimer = null;
+  function showHandles() {
+    const ov = document.getElementById('sel-overlay');
+    if (!ov || ov.style.display === 'none') return;
+    clearTimeout(selHideTimer);
+    ov.classList.add('sel-visible');
+  }
+  function hideHandlesAfter(ms = 3000) {
+    clearTimeout(selHideTimer);
+    selHideTimer = setTimeout(() => {
+      const ov = document.getElementById('sel-overlay');
+      if (ov) ov.classList.remove('sel-visible');
+    }, ms);
+  }
+  function showHandlesWithTimer(ms = 3000) {
+    showHandles();
+    hideHandlesAfter(ms);
+  }
+
   function initInteraction() {
     const canvas = document.getElementById('canvas');
 
     canvas.addEventListener('mousedown', e => {
       if (e.target.classList.contains('rh')) return;
       if (!imgs['bg']) return;
+      showHandles();
       isDragging = true;
       dStartX = e.clientX; dStartY = e.clientY;
       dBgX0 = bgX; dBgY0 = bgY;
@@ -1350,11 +1423,32 @@
 
     document.querySelectorAll('.rh[data-corner]').forEach(h => {
       h.addEventListener('mousedown', e => {
+        showHandles();
         isResizing = true;
         rCorner = h.dataset.corner;
         rStartX = e.clientX; rStartY = e.clientY;
         rBgW0 = bgW; rBgH0 = bgH; rBgX0 = bgX; rBgY0 = bgY;
         e.stopPropagation(); e.preventDefault();
+      });
+    });
+
+    /* ---- 회전 존: 회전 ---- */
+    document.querySelectorAll('.rot-zone').forEach(z => {
+      z.addEventListener('mousedown', e => {
+        if (!imgs['bg']) return;
+        showHandles();
+        isRotating = true;
+        const wrap = document.getElementById('canvas-sel-wrap');
+        const wr = wrap ? wrap.getBoundingClientRect() : document.getElementById('canvas').getBoundingClientRect();
+        rotCenter = { x: wr.left + (bgX + bgW / 2) * DS, y: wr.top + (bgY + bgH / 2) * DS };
+        rotBgAngle0 = bgAngle;
+        rotStartAngle = Math.atan2(e.clientY - rotCenter.y, e.clientX - rotCenter.x) * 180 / Math.PI;
+        e.stopPropagation(); e.preventDefault();
+      });
+      z.addEventListener('dblclick', e => {
+        if (!imgs['bg']) return;
+        bgAngle = 0; clampBg(); applyBg(); updateSel();
+        e.stopPropagation();
       });
     });
 
@@ -1390,11 +1484,14 @@
           case 'bc': newH = Math.max(minBgW * natAspect, rBgH0 + canvasDy); newW = newH / natAspect; bgW=newW; bgH=newH; bgX=rBgX0+(rBgW0-newW)/2; bgY=rBgY0; break;
           case 'tc': newH = Math.max(minBgW * natAspect, rBgH0 - canvasDy); newW = newH / natAspect; bgW=newW; bgH=newH; bgX=rBgX0+(rBgW0-newW)/2; bgY=rBgY0+rBgH0-newH; break;
         }
+        ensureBgCoversCanvas();  /* 회전 상태에서 축소 시 뒷배경 노출 방지 */
         clampBg(); applyBg(); updateSel();
       }
       if (isRotating) {
         const cur = Math.atan2(e.clientY - rotCenter.y, e.clientX - rotCenter.x) * 180 / Math.PI;
         bgAngle = rotBgAngle0 + (cur - rotStartAngle);
+        ensureBgCoversCanvas();
+        clampBg();
         applyBg(); updateSel();
       }
     });
@@ -1403,25 +1500,8 @@
       if (isDragging) { isDragging = false; document.getElementById('canvas').classList.remove('dragging'); }
       isResizing = false;
       isRotating = false;
+      if (imgs['bg']) hideHandlesAfter(3000);
     });
-
-    const rotHandle = document.getElementById('rot-handle');
-    if (rotHandle) {
-      rotHandle.addEventListener('mousedown', e => {
-        isRotating = true;
-        const wrap = document.getElementById('canvas-sel-wrap');
-        const wr = wrap ? wrap.getBoundingClientRect() : document.getElementById('canvas').getBoundingClientRect();
-        const DS = 1/3;
-        rotCenter = { x: wr.left + (bgX + bgW/2) * DS, y: wr.top + (bgY + bgH/2) * DS };
-        rotBgAngle0 = bgAngle;
-        rotStartAngle = Math.atan2(e.clientY - rotCenter.y, e.clientX - rotCenter.x) * 180 / Math.PI;
-        e.stopPropagation(); e.preventDefault();
-      });
-      rotHandle.addEventListener('dblclick', e => {
-        bgAngle = 0; clampBg(); applyBg(); updateSel();
-        e.stopPropagation();
-      });
-    }
   }
 
   function onWmToggle() {
