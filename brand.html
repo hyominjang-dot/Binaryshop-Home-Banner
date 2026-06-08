@@ -1232,8 +1232,12 @@
   }
 
   function onThumbToggle() {
-    document.getElementById('product-preview').style.display =
-      document.getElementById('f-thumb-on').checked ? '' : 'none';
+    const on = document.getElementById('f-thumb-on').checked;
+    /* 미리보기 OFF → 상품 리스트 + 고정 USM 로고 + dim 오버레이 모두 숨김 (배경 사진만) */
+    document.getElementById('product-preview').style.display = on ? '' : 'none';
+    const logo = document.querySelector('.cv-logo-guide');
+    if (logo) logo.style.display = on ? '' : 'none';
+    document.getElementById('cv-overlay').style.display = (on && imgs['bg']) ? '' : 'none';
   }
 
   function onWmToggle() {
@@ -1247,8 +1251,11 @@
     if (imgs['bg']) { applyBg(); updateSel(); }
     else document.getElementById('cv-bg').style.backgroundImage = '';
 
-    /* Overlay: only show when bg image loaded */
-    document.getElementById('cv-overlay').style.display = imgs['bg'] ? '' : 'none';
+    /* Overlay + 고정 USM 로고: bg 로드 + 미리보기 토글 ON 일 때만 표시 */
+    const thumbOn = document.getElementById('f-thumb-on')?.checked ?? true;
+    document.getElementById('cv-overlay').style.display = (imgs['bg'] && thumbOn) ? '' : 'none';
+    const logoEl = document.querySelector('.cv-logo-guide');
+    if (logoEl) logoEl.style.display = thumbOn ? '' : 'none';
 
     /* Watermark */
     const wmOn  = document.getElementById('f-wm-on').checked;
@@ -1302,8 +1309,7 @@
         ctx.fillText(`Photo by ${wmName}`, CW - 15, CH - 15);
       }
 
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.fillRect(0, 0, CW, CH);
+      /* dim 오버레이는 추출에 포함하지 않음 — 시스템이 렌더 시 입힘 (로고와 동일 처리, 이중 dim 방지) */
 
       if (_genBlobUrl) { if (_genBlobUrl.startsWith('blob:')) URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
       const blob = await new Promise(r => out.toBlob(r, 'image/png'));
@@ -1439,9 +1445,7 @@
         ctx.fillText(`Photo by ${wmName}`, CW - 15, CH - 15);
       }
 
-      /* 3. overlay 20% */
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.fillRect(0, 0, CW, CH);
+      /* 3. dim 오버레이는 추출에 포함하지 않음 — 시스템이 렌더 시 입힘 (로고와 동일 처리, 이중 dim 방지) */
 
       const blob = await new Promise(r => out.toBlob(r, 'image/png'));
       if (fileHandle) {
