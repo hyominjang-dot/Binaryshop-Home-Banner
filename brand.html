@@ -1271,6 +1271,32 @@
   /* URL 생성 */
   let _genBlobUrl = null;
 
+  /* ── 사내 구글 드라이브 업로드 (crm-carousel와 동일 백엔드: 서비스계정 aws-datalake) ──
+     날짜별 폴더(YYYY-MM-DD)에 저장 후 thumbnail 이미지 URL 반환 */
+  const DRIVE_PARENT_FOLDER = '1Qz2z3VAcWKLJ6ThTrR4T38SRXvVnwCaW'; /* 바이너리샵 웹빌더_URL생성 */
+  async function uploadToDrive(dataUrl, prefix, btn) {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const stamp   = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    if (btn) btn.textContent = '폴더 확인...';
+    const fRes = await fetch('/mktd/api/drive-folder', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: dateStr, parentId: DRIVE_PARENT_FOLDER })
+    });
+    const fJson = await fRes.json().catch(() => ({}));
+    if (!fRes.ok || !fJson.ok) throw new Error('날짜 폴더 생성 실패: ' + (fJson.error || ('HTTP ' + fRes.status)));
+    if (btn) btn.textContent = '업로드 중...';
+    const filename = `${prefix}_${dateStr}_${stamp}.png`;
+    const uRes = await fetch('/mktd/api/upload-drive', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, dataUrl, folderId: fJson.folderId })
+    });
+    const uJson = await uRes.json().catch(() => ({}));
+    if (!uRes.ok || !uJson.ok) throw new Error('드라이브 업로드 실패' + (uJson.step ? '('+uJson.step+')' : '') + ': ' + (uJson.error || ('HTTP ' + uRes.status)));
+    return uJson.url;
+  }
+
   async function doGenUrl() {
     if (!imgs['bg']) { alert('배경 사진을 먼저 업로드해주세요.'); return; }
     const btn = document.getElementById('btn-url-gen');
@@ -1312,48 +1338,10 @@
       /* dim 오버레이는 추출에 포함하지 않음 — 시스템이 렌더 시 입힘 (로고와 동일 처리, 이중 dim 방지) */
 
       if (_genBlobUrl) { if (_genBlobUrl.startsWith('blob:')) URL.revokeObjectURL(_genBlobUrl); _genBlobUrl = null; }
-      const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+      const dataUrl = out.toDataURL('image/png');
 
-      /* GitHub API 업로드 → raw.githubusercontent.com 공개 URL
-         토큰 최초 입력 시 localStorage 저장, 이후 자동 사용 */
-      btn.textContent = '업로드 중...';
-      const GH_REPO = 'hyominjang-dot/Binaryshop-Home-Banner';
-      let ghToken = localStorage.getItem('gh_upload_token');
-      if (!ghToken) {
-        ghToken = (window.prompt(
-          '공개 URL 생성에 GitHub Token이 필요합니다.\n\n' +
-          '발급: GitHub → Settings → Developer settings\n' +
-          '→ Personal access tokens → Fine-grained tokens\n' +
-          '→ Repository: ' + GH_REPO + '\n' +
-          '→ Permissions: Contents → Read and write\n\n' +
-          '토큰을 입력하세요:'
-        ) || '').trim();
-        if (!ghToken) return;
-        localStorage.setItem('gh_upload_token', ghToken);
-      }
-      const ghBase64 = await new Promise(resolve => {
-        const r = new FileReader();
-        r.onload = e => resolve(e.target.result.split(',')[1]);
-        r.readAsDataURL(blob);
-      });
-      const ghFile = 'banner_' + Date.now() + '.png';
-      const ghResp = await fetch(
-        'https://api.github.com/repos/' + GH_REPO + '/contents/uploads/' + ghFile,
-        {
-          method: 'PUT',
-          headers: { 'Authorization': 'Bearer ' + ghToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: 'Upload ' + ghFile, content: ghBase64 }),
-          signal: AbortSignal.timeout(30000)
-        }
-      );
-      if (ghResp.status === 401) {
-        localStorage.removeItem('gh_upload_token');
-        alert('GitHub 토큰이 유효하지 않습니다. 다시 시도하면 재입력할 수 있습니다.');
-        return;
-      }
-      if (!ghResp.ok) throw new Error('GitHub 업로드 실패: HTTP ' + ghResp.status);
-      const ghData = await ghResp.json();
-      const publicUrl = ghData.content.download_url;
+      /* 사내 구글 드라이브 업로드 (서비스계정 백엔드) → 날짜별 폴더 → thumbnail URL */
+      const publicUrl = await uploadToDrive(dataUrl, 'brand', btn);
       _genBlobUrl = publicUrl;
       const input = document.getElementById('url-input');
       input.value = publicUrl;
